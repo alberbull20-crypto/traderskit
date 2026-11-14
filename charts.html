@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Live Charts</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab active" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>LIVE CHARTS</span>
+        <span>TICK LINE AND CANDLESTICK VIEWS</span>
+        <span>DERIV VOLATILITY INDICES</span>
+        <span>LIVE CHARTS</span>
+        <span>TICK LINE AND CANDLESTICK VIEWS</span>
+        <span>DERIV VOLATILITY INDICES</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="terminal-top-row">
+        <h2>Interactive Charting Workspace</h2>
+        <div class="live-quote-box">QUOTE: <span id="ch-quote">---.--</span></div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px;">
+        <select id="ch-market" class="select-box">
+          <option value="R_100">Volatility 100 Index</option>
+          <option value="1HZ100V">Volatility 100 (1s) Index</option>
+          <option value="R_75">Volatility 75 Index</option>
+          <option value="R_50">Volatility 50 Index</option>
+          <option value="R_25">Volatility 25 Index</option>
+          <option value="R_10">Volatility 10 Index</option>
+        </select>
+
+        <div class="action-pills-group">
+          <button class="action-pill active" id="mode-line">Line (ticks)</button>
+          <button class="action-pill" id="mode-candle">Candles</button>
+        </div>
+
+        <select id="ch-gran" class="select-box" style="display: none;">
+          <option value="60">1 minute</option>
+          <option value="300">5 minutes</option>
+          <option value="900">15 minutes</option>
+        </select>
+
+        <span id="ch-status" style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--mono);">Connecting...</span>
+      </div>
+
+      <!-- Chart -->
+      <div style="background: #05080f; border: 1px solid var(--border); border-radius: 12px; padding: 8px;">
+        <canvas id="chart" style="width: 100%; height: 400px; display: block;"></canvas>
+      </div>
+
+      <p style="margin-top: 18px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Charts show price history only and cannot tell you where the price goes next. Risk warning: you can lose your whole stake. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    // ---------- Chart ----------
+    const APP_ID = 1089;
+    const GREEN = "#2fd36b";
+    const RED = "#ff3b30";
+    const CYAN = "#38bdf8";
+
+    let socket;
+    let symbol = document.getElementById("ch-market").value;
+    let mode = "line";                       // "line" or "candle"
+    let gran = 60;
+    let pip = 2;
+    let tickPrices = [];
+    let candles = [];
+
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+
+    function decimals(n) {
+      const s = String(n);
+      return s.includes(".") ? s.split(".")[1].length : 0;
+    }
+
+    function setStatus(text) { document.getElementById("ch-status").textContent = text; }
+
+    function lastPrice() {
+      if (mode === "line") return tickPrices.length ? tickPrices[tickPrices.length - 1] : null;
+      return candles.length ? candles[candles.length - 1].close : null;
+    }
+
+    function showQuote() {
+      const p = lastPrice();
+      document.getElementById("ch-quote").textContent = p === null ? "---.--" : p.toFixed(pip);
+    }
+
+    // ----- Drawing -----
+    function draw() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      const hasData = mode === "line" ? tickPrices.length > 1 : candles.length > 0;
+      if (!hasData) return;
+
+      const padL = 10, padR = 70, padT = 14, padB = 14;
+      const pw = w - padL - padR;
+      const ph = h - padT - padB;
+
+      // Price range
+      let min, max;
+      if (mode === "line") {
+        min = Math.min(...tickPrices);
+        max = Math.max(...tickPrices);
+      } else {
+        min = Math.min(...candles.map(c => c.low));
+        max = Math.max(...candles.map(c => c.high));
+      }
+      if (max === min) { max += 1; min -= 1; }
+      const margin = (max - min) * 0.08;
+      min -= margin;
+      max += margin;
+      const y = v => padT + ((max - v) / (max - min)) * ph;
+
+      // Grid and price labels
+      ctx.font = "11px monospace";
+      ctx.textBaseline = "middle";
+      for (let i = 0; i <= 5; i++) {
+        const v = min + ((max - min) * i) / 5;
+        const gy = y(v);
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.beginPath();
+        ctx.moveTo(padL, gy);
+        ctx.lineTo(padL + pw, gy);
+        ctx.stroke();
+        ctx.fillStyle = "#8392ad";
+        ctx.fillText(v.toFixed(pip), padL + pw + 8, gy);
+      }
+
+      if (mode === "line") {
+        const n = tickPrices.length;
+        const x = i => padL + (i / (n - 1)) * pw;
+
+        // Fill under the line
+        const grad = ctx.createLinearGradient(0, padT, 0, padT + ph);
+        grad.addColorStop(0, "rgba(56,189,248,0.25)");
+        grad.addColorStop(1, "rgba(56,189,248,0)");
+        ctx.beginPath();
+        ctx.moveTo(x(0), y(tickPrices[0]));
+        for (let i = 1; i < n; i++) ctx.lineTo(x(i), y(tickPrices[i]));
+        ctx.lineTo(x(n - 1), padT + ph);
+        ctx.lineTo(x(0), padT + ph);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // The line
+        ctx.beginPath();
+        ctx.moveTo(x(0), y(tickPrices[0]));
+        for (let i = 1; i < n; i++) ctx.lineTo(x(i), y(tickPrices[i]));
+        ctx.strokeStyle = CYAN;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        const n = candles.length;
+        const slot = pw / n;
+        const bodyW = Math.max(2, slot * 0.6);
+        candles.forEach((c, i) => {
+          const cx = padL + slot * i + slot / 2;
+          const color = c.close >= c.open ? GREEN : RED;
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(cx, y(c.high));
+          ctx.lineTo(cx, y(c.low));
+          ctx.stroke();
+          const top = y(Math.max(c.open, c.close));
+          const bottom = y(Math.min(c.open, c.close));
+          ctx.fillRect(cx - bodyW / 2, top, bodyW, Math.max(1, bottom - top));
+        });
+      }
+
+      // Last price line and tag
+      const last = lastPrice();
+      const ly = y(last);
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.beginPath();
+      ctx.moveTo(padL, ly);
+      ctx.lineTo(padL + pw, ly);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = CYAN;
+      ctx.fillRect(padL + pw + 2, ly - 9, padR - 4, 18);
+      ctx.fillStyle = "#04121c";
+      ctx.fillText(last.toFixed(pip), padL + pw + 8, ly);
+    }
+
+    // ----- Data -----
+    function clearData() {
+      tickPrices = [];
+      candles = [];
+      showQuote();
+      draw();
+    }
+
+    function subscribe() {
+      socket.send(JSON.stringify({ forget_all: ["ticks", "candles"] }));
+      const req = { ticks_history: symbol, end: "latest", subscribe: 1 };
+      if (mode === "line") {
+        req.count = 150;
+        req.style = "ticks";
+      } else {
+        req.count = 80;
+        req.style = "candles";
+        req.granularity = gran;
+      }
+      socket.send(JSON.stringify(req));
+      setStatus("Loading...");
+    }
+
+    function connect() {
+      socket = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + APP_ID);
+
+      socket.onopen = () => { clearData(); subscribe(); };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          setStatus("Error: " + data.error.message);
+          return;
+        }
+
+        // Tick history (line mode)
+        if (data.msg_type === "history" && mode === "line" && data.echo_req.ticks_history === symbol) {
+          pip = data.pip_size || 2;
+          tickPrices = data.history.prices.map(Number);
+          setStatus("Live: last " + tickPrices.length + " ticks");
+        }
+
+        // New tick (line mode)
+        if (data.msg_type === "tick" && mode === "line" && data.tick.symbol === symbol) {
+          pip = data.tick.pip_size || pip;
+          tickPrices.push(Number(data.tick.quote));
+          if (tickPrices.length > 150) tickPrices.shift();
+        }
+
+        // Candle history (candle mode)
+        if (data.msg_type === "candles" && mode === "candle" && data.echo_req.ticks_history === symbol) {
+          candles = data.candles.map(c => ({
+            open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close), epoch: Number(c.epoch)
+          }));
+          pip = data.pip_size || Math.max(...candles.slice(-10).map(c => decimals(c.close)), 2);
+          setStatus("Live: " + candles.length + " candles");
+        }
+
+        // Candle update (candle mode)
+        if (data.msg_type === "ohlc" && mode === "candle" && data.ohlc.symbol === symbol && Number(data.ohlc.granularity) === gran) {
+          const o = data.ohlc;
+          const c = {
+            open: Number(o.open), high: Number(o.high), low: Number(o.low), close: Number(o.close), epoch: Number(o.open_time)
+          };
+          const lastC = candles[candles.length - 1];
+          if (lastC && lastC.epoch === c.epoch) candles[candles.length - 1] = c;
+          else { candles.push(c); if (candles.length > 80) candles.shift(); }
+        }
+
+        showQuote();
+        draw();
+      };
+
+      socket.onclose = () => {
+        setStatus("Connection lost. Reconnecting...");
+        setTimeout(connect, 3000);
+      };
+    }
+
+    function restart() {
+      clearData();
+      if (socket && socket.readyState === WebSocket.OPEN) subscribe();
+    }
+
+    // ----- Controls -----
+    document.getElementById("ch-market").addEventListener("change", (e) => {
+      symbol = e.target.value;
+      restart();
+    });
+
+    document.getElementById("mode-line").addEventListener("click", () => {
+      mode = "line";
+      document.getElementById("mode-line").classList.add("active");
+      document.getElementById("mode-candle").classList.remove("active");
+      document.getElementById("ch-gran").style.display = "none";
+      restart();
+    });
+
+    document.getElementById("mode-candle").addEventListener("click", () => {
+      mode = "candle";
+      document.getElementById("mode-candle").classList.add("active");
+      document.getElementById("mode-line").classList.remove("active");
+      document.getElementById("ch-gran").style.display = "inline-block";
+      restart();
+    });
+
+    document.getElementById("ch-gran").addEventListener("change", (e) => {
+      gran = parseInt(e.target.value, 10);
+      restart();
+    });
+
+    window.addEventListener("resize", draw);
+
+    connect();
+  </script>
+</body>
+</html>

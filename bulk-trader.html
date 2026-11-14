@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Bulk Trader</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .field-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .settings-grid .select-box, .settings-grid .token-input-sm { width: 100%; }
+
+    .big-tick { text-align: center; margin: 6px 0 22px; }
+    .big-tick small { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; color: var(--text-muted); }
+    .big-tick strong {
+      font-family: var(--mono); font-size: 2.6rem; font-weight: 800; color: var(--cyan);
+      text-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+    }
+
+    .circles { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 14px; margin-bottom: 24px; perspective: 1000px; }
+    .circle-item { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; padding-bottom: 14px; }
+    .ring-wrap { position: relative; width: 84px; height: 84px; transition: transform 0.2s; }
+    .ring-wrap svg { width: 84px; height: 84px; transform: rotate(-90deg); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45)); }
+    .ring-bg { fill: var(--bg-element); stroke: #0a0f1d; stroke-width: 6; }
+    .ring-fg { fill: none; stroke: var(--blue); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 0.3s, stroke 0.3s; }
+    .ring-fg.hot { stroke: var(--green); }
+    .ring-fg.cold { stroke: var(--red); }
+    .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--mono); }
+    .ring-text b { font-size: 1.2rem; color: #fff; }
+    .ring-text span { font-size: 0.68rem; color: var(--text-muted); }
+    .circle-item.current .ring-wrap { transform: scale(1.1); }
+    .circle-item.current::after {
+      content: "";
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 10px solid var(--red);
+    }
+
+    .strip { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; min-height: 36px; }
+    .strip-box {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      border-radius: 9px; font-family: var(--mono); font-weight: 800; font-size: 0.9rem; color: #04210f;
+      background: linear-gradient(135deg, #3be07f, var(--green));
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .strip-box.alt { background: linear-gradient(135deg, var(--red), var(--red-deep)); color: #fff; }
+    .strip-box.mid { background: var(--bg-element); color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; }
+    .strip-summary { text-align: center; font-size: 0.8rem; color: var(--text-muted); font-family: var(--mono); }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab active" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>BULK TRADER</span>
+        <span>LIVE DIGIT CIRCLES</span>
+        <span>EVEN / ODD AND OVER / UNDER HISTORY</span>
+        <span>STATISTICS, NOT PREDICTIONS</span>
+        <span>BULK TRADER</span>
+        <span>LIVE DIGIT CIRCLES</span>
+        <span>EVEN / ODD AND OVER / UNDER HISTORY</span>
+        <span>STATISTICS, NOT PREDICTIONS</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 150px; max-width: 480px; margin-bottom: 10px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:30px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:48px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:62px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:44px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:72px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:58px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:80px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:54px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:90px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:76px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:98px; --z:5px;"></div>
+          <div class="coin" style="width: 42px; height: 42px; font-size: 1.1rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <h2>Bulk Trader: Live Digit Circles</h2>
+        <span id="bt-status" style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--mono);">Connecting...</span>
+      </div>
+
+      <!-- Settings -->
+      <div class="settings-grid">
+        <div>
+          <label class="field-label" for="bt-market">Market</label>
+          <select id="bt-market" class="select-box">
+            <option value="R_100">Volatility 100 Index</option>
+            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+            <option value="R_75">Volatility 75 Index</option>
+            <option value="R_50">Volatility 50 Index</option>
+            <option value="R_25">Volatility 25 Index</option>
+            <option value="R_10">Volatility 10 Index</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="bt-type">Trade type</label>
+          <select id="bt-type" class="select-box">
+            <option value="evenodd">Even/Odd</option>
+            <option value="overunder">Over/Under</option>
+          </select>
+        </div>
+        <div id="bt-barrier-wrap" style="display: none;">
+          <label class="field-label" for="bt-barrier">Barrier digit</label>
+          <select id="bt-barrier" class="select-box">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option>
+            <option selected>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="bt-ticks">Number of ticks (50 to 5000)</label>
+          <input type="number" id="bt-ticks" value="1000" min="50" max="5000" step="50" class="token-input-sm" />
+        </div>
+      </div>
+
+      <!-- Current tick -->
+      <div class="big-tick">
+        <small>CURRENT TICK</small>
+        <strong id="bt-quote">---.--</strong>
+      </div>
+
+      <!-- Digit circles -->
+      <div class="circles" id="bt-circles"></div>
+
+      <!-- History strip -->
+      <div class="strip" id="bt-strip"></div>
+      <div class="strip-summary" id="bt-summary">Waiting for ticks...</div>
+
+      <p style="margin-top: 22px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        A ring is full at 20%, and each digit should land near 10% over time. The differences you see are normal random variation, and volatility indices are random, so a digit that has been hot or cold is no more or less likely to come next. Risk warning: you can lose your whole stake. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    // ---------- Digit circles ----------
+    const APP_ID = 1089;
+    const RING_R = 36;
+    const RING_C = 2 * Math.PI * RING_R; // ring length
+    const STRIP_LENGTH = 20;
+
+    let socket;
+    let symbol = document.getElementById("bt-market").value;
+    let pip = 2;
+    let digits = [];
+
+    // Build the ten circles once
+    const circlesEl = document.getElementById("bt-circles");
+    for (let d = 0; d <= 9; d++) {
+      circlesEl.innerHTML +=
+        '<div class="circle-item" id="ci-' + d + '">' +
+          '<div class="ring-wrap">' +
+            '<svg viewBox="0 0 84 84">' +
+              '<circle class="ring-bg" cx="42" cy="42" r="' + RING_R + '"></circle>' +
+              '<circle class="ring-fg" id="rf-' + d + '" cx="42" cy="42" r="' + RING_R + '" stroke-dasharray="' + RING_C + '" stroke-dashoffset="' + RING_C + '"></circle>' +
+            '</svg>' +
+            '<div class="ring-text"><b>' + d + '</b><span id="rp-' + d + '">0.0%</span></div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function tickCount() {
+      const n = parseInt(document.getElementById("bt-ticks").value, 10);
+      if (!n) return 1000;
+      return Math.min(5000, Math.max(50, n));
+    }
+
+    function digitOf(price) { return parseInt(Number(price).toFixed(pip).slice(-1), 10); }
+
+    function render() {
+      const n = digits.length;
+      if (!n) return;
+
+      const counts = Array(10).fill(0);
+      digits.forEach(d => counts[d]++);
+      const maxC = Math.max(...counts);
+      const minC = Math.min(...counts);
+      const latest = digits[n - 1];
+
+      for (let d = 0; d <= 9; d++) {
+        const pct = (counts[d] / n) * 100;
+        const fg = document.getElementById("rf-" + d);
+        fg.style.strokeDashoffset = RING_C * (1 - Math.min(pct / 20, 1));
+        fg.classList.toggle("hot", counts[d] === maxC);
+        fg.classList.toggle("cold", counts[d] === minC && minC !== maxC);
+        document.getElementById("rp-" + d).textContent = pct.toFixed(2) + "%";
+        document.getElementById("ci-" + d).classList.toggle("current", d === latest);
+      }
+
+      renderStrip();
+      document.getElementById("bt-status").textContent = "Analysing " + n + " ticks";
+    }
+
+    function renderStrip() {
+      const type = document.getElementById("bt-type").value;
+      const barrier = parseInt(document.getElementById("bt-barrier").value, 10);
+      const recent = digits.slice(-STRIP_LENGTH);
+      let html = "";
+
+      recent.forEach(d => {
+        if (type === "evenodd") {
+          html += d % 2 === 0
+            ? '<div class="strip-box">E</div>'
+            : '<div class="strip-box alt">O</div>';
+        } else {
+          if (d > barrier) html += '<div class="strip-box">O</div>';
+          else if (d < barrier) html += '<div class="strip-box alt">U</div>';
+          else html += '<div class="strip-box mid">=</div>';
+        }
+      });
+      document.getElementById("bt-strip").innerHTML = html;
+
+      // Summary over all analysed ticks
+      const n = digits.length;
+      let summary;
+      if (type === "evenodd") {
+        const even = digits.filter(d => d % 2 === 0).length;
+        summary = "Even " + ((even / n) * 100).toFixed(1) + "%  |  Odd " + (((n - even) / n) * 100).toFixed(1) + "%";
+      } else {
+        const over = digits.filter(d => d > barrier).length;
+        const under = digits.filter(d => d < barrier).length;
+        const equal = n - over - under;
+        summary = "Over " + barrier + ": " + ((over / n) * 100).toFixed(1) + "%  |  Under " + barrier + ": " + ((under / n) * 100).toFixed(1) + "%  |  Equal: " + ((equal / n) * 100).toFixed(1) + "%";
+      }
+      document.getElementById("bt-summary").textContent = summary;
+    }
+
+    function reset() {
+      digits = [];
+      document.getElementById("bt-quote").textContent = "---.--";
+      document.getElementById("bt-status").textContent = "Loading ticks...";
+      document.getElementById("bt-strip").innerHTML = "";
+      document.getElementById("bt-summary").textContent = "Waiting for ticks...";
+      for (let d = 0; d <= 9; d++) {
+        document.getElementById("rf-" + d).style.strokeDashoffset = RING_C;
+        document.getElementById("rp-" + d).textContent = "0.0%";
+        document.getElementById("ci-" + d).classList.remove("current");
+      }
+    }
+
+    function subscribe() {
+      socket.send(JSON.stringify({ forget_all: "ticks" }));
+      socket.send(JSON.stringify({
+        ticks_history: symbol,
+        count: tickCount(),
+        end: "latest",
+        style: "ticks",
+        subscribe: 1
+      }));
+    }
+
+    function connect() {
+      socket = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + APP_ID);
+
+      socket.onopen = () => { reset(); subscribe(); };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          document.getElementById("bt-status").textContent = "Error: " + data.error.message;
+          return;
+        }
+
+        if (data.msg_type === "history" && data.echo_req.ticks_history === symbol) {
+          pip = data.pip_size || 2;
+          digits = data.history.prices.map(digitOf);
+          const prices = data.history.prices;
+          document.getElementById("bt-quote").textContent = Number(prices[prices.length - 1]).toFixed(pip);
+          render();
+        }
+
+        if (data.msg_type === "tick" && data.tick.symbol === symbol) {
+          pip = data.tick.pip_size || pip;
+          digits.push(digitOf(data.tick.quote));
+          while (digits.length > tickCount()) digits.shift();
+          document.getElementById("bt-quote").textContent = Number(data.tick.quote).toFixed(pip);
+          render();
+        }
+      };
+
+      socket.onclose = () => {
+        document.getElementById("bt-status").textContent = "Connection lost. Reconnecting...";
+        setTimeout(connect, 3000);
+      };
+    }
+
+    function restart() {
+      reset();
+      if (socket && socket.readyState === WebSocket.OPEN) subscribe();
+    }
+
+    document.getElementById("bt-market").addEventListener("change", (e) => { symbol = e.target.value; restart(); });
+    document.getElementById("bt-ticks").addEventListener("change", restart);
+
+    document.getElementById("bt-type").addEventListener("change", (e) => {
+      document.getElementById("bt-barrier-wrap").style.display = e.target.value === "overunder" ? "block" : "none";
+      renderStrip();
+    });
+    document.getElementById("bt-barrier").addEventListener("change", renderStrip);
+
+    connect();
+  </script>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Automated Trading &amp; Smart Bots</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Landing page look (all styles for this page live here) ===== */
+    body.landing-body {
+      background-image:
+        radial-gradient(ellipse 80% 45% at 50% 0%, rgba(34, 211, 238, 0.14), transparent),
+        radial-gradient(ellipse 50% 30% at 85% 25%, rgba(47, 211, 107, 0.08), transparent);
+      background-size: auto;
+    }
+
+    /* Header */
+    .landing-header {
+      max-width: none;
+      padding: 14px 32px;
+      border-bottom: 1px solid #12203a;
+      background: rgba(7, 13, 26, 0.85);
+    }
+    .brand-logo-text .lg { color: var(--green); }
+    .brand-logo-text .lp { color: var(--red); margin-left: 2px; }
+    .btn-login-now {
+      background: #fff;
+      color: #0a1020;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .btn-login-now:hover { box-shadow: 0 10px 24px rgba(255, 255, 255, 0.18); }
+
+    /* Hero */
+    .hero-section { padding: 56px 24px 30px; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.6px;
+      font-size: 0.75rem;
+      color: var(--green);
+      border-color: rgba(47, 211, 107, 0.35);
+      background: rgba(47, 211, 107, 0.08);
+    }
+    .hero-badge svg { width: 16px; height: 16px; }
+    .hero-section h1 {
+      min-height: 1.2em;
+      background: linear-gradient(90deg, #ffffff 35%, #67e8f9);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    .caret {
+      display: inline-block;
+      width: 3px;
+      height: 0.9em;
+      background: var(--green);
+      margin-left: 4px;
+      vertical-align: -0.08em;
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .hero-sub { max-width: 640px; margin: 18px auto 0; color: #aab6cc; font-size: 1rem; line-height: 1.6; }
+    .hero-cta-group { flex-direction: column; align-items: center; gap: 12px; }
+    .btn-hero-start {
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .btn-hero-signup { padding: 10px 26px; font-size: 0.85rem; border-radius: 99px; }
+    .ck { color: var(--green); margin-right: 4px; font-weight: 800; }
+
+    /* Scene */
+    .trade-scene { margin-top: 0; height: 300px; }
+
+    /* Step cards */
+    .steps {
+      max-width: 1200px;
+      margin: 60px auto 50px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px 22px;
+      perspective: 1200px;
+    }
+    .step-card {
+      position: relative;
+      background: linear-gradient(160deg, #0f1a33, #0a1224);
+      border: 1px solid #1b2a45;
+      border-top-color: var(--border-hi);
+      border-radius: 18px;
+      padding: 46px 26px 26px;
+      text-align: center;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+      transform-style: preserve-3d;
+    }
+    .step-card:hover {
+      transform: rotateX(4deg) rotateY(-6deg) translateY(-6px);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.3);
+    }
+    .step-num {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #22d3ee, #0e7490);
+      border: 4px solid #070d1a;
+      box-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #fff;
+    }
+    .step-card h4 { font-size: 1.05rem; margin-bottom: 10px; }
+    .step-card p { font-size: 0.88rem; line-height: 1.65; color: #b4c0d6; }
+    .step-where { display: inline-block; margin-top: 16px; font-size: 0.78rem; font-weight: 700; color: #22d3ee; }
+
+    /* Section headings */
+    .section-head { text-align: center; max-width: 760px; margin: 0 auto 34px; padding: 0 24px; }
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem; font-weight: 800; letter-spacing: 2px;
+      color: #22d3ee;
+      border: 1px solid rgba(34, 211, 238, 0.35);
+      background: rgba(34, 211, 238, 0.08);
+      padding: 5px 14px; border-radius: 99px; margin-bottom: 16px;
+    }
+    .section-head h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.5px; }
+    .section-head p { margin-top: 10px; color: #aab6cc; line-height: 1.6; }
+
+    /* Feature cards */
+    .feat-grid {
+      max-width: 1250px;
+      margin: 0 auto 70px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      perspective: 1200px;
+    }
+    .feat-card {
+      background: linear-gradient(160deg, #0f1a33, #0a1224);
+      border: 1px solid #1b2a45;
+      border-top-color: var(--border-hi);
+      border-radius: 18px;
+      padding: 28px;
+      transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s;
+      transform-style: preserve-3d;
+    }
+    .feat-card:hover {
+      transform: rotateX(3deg) rotateY(-5deg) translateY(-6px);
+      border-color: rgba(34, 211, 238, 0.5);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(34, 211, 238, 0.12);
+    }
+    .feat-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: rgba(34, 211, 238, 0.12);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      color: #22d3ee;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feat-icon svg { width: 26px; height: 26px; }
+    .feat-card h3 { font-size: 1.08rem; font-weight: 700; }
+    .feat-sub { display: block; margin: 6px 0 12px; font-size: 0.82rem; font-weight: 700; color: #22d3ee; }
+    .feat-card p { font-size: 0.86rem; line-height: 1.65; color: #b4c0d6; }
+
+    /* Why grid */
+    .why-wrap {
+      max-width: 1250px;
+      margin: 0 auto 60px;
+      padding: 44px 28px;
+      border: 1px solid #1b2a45;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(15, 26, 51, 0.7), rgba(7, 13, 26, 0.4));
+    }
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .why-item {
+      display: flex; align-items: center; gap: 12px;
+      background: #0d1629;
+      border: 1px solid #1b2a45;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.86rem;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .why-item:hover { border-color: rgba(34, 211, 238, 0.5); box-shadow: 0 0 22px rgba(34, 211, 238, 0.12); }
+    .why-item svg { flex-shrink: 0; width: 22px; height: 22px; color: #22d3ee; }
+
+    /* Get started panel */
+    .cta-panel {
+      max-width: 1250px;
+      margin: 0 auto 60px;
+      padding: 60px 24px;
+      text-align: center;
+      border: 1px solid #1b2a45;
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(47, 211, 107, 0.06) 60%, transparent),
+        #0a1224;
+    }
+    .cta-panel h2 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 800; letter-spacing: -0.5px; }
+    .cta-panel p { margin: 10px auto 26px; max-width: 560px; color: #aab6cc; line-height: 1.6; }
+    .cta-checks { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-top: 20px; font-size: 0.78rem; color: var(--text-muted); }
+
+    /* Risk disclaimer */
+    .risk-box { max-width: 1250px; margin: 0 auto; padding: 30px 24px 60px; border-top: 1px solid #12203a; }
+    .risk-box h3 { display: flex; align-items: center; gap: 10px; color: var(--gold); font-size: 1.15rem; margin-bottom: 14px; }
+    .risk-box h3 svg { width: 24px; height: 24px; }
+    .risk-box p { font-size: 0.82rem; line-height: 1.7; color: #b4c0d6; margin-bottom: 12px; }
+    .risk-box ul { list-style: none; margin: 0 0 14px; }
+    .risk-box li { font-size: 0.82rem; line-height: 1.7; color: #b4c0d6; padding-left: 18px; position: relative; margin-bottom: 6px; }
+    .risk-box li::before { content: "\2022"; position: absolute; left: 4px; color: var(--gold); }
+
+    @media (max-width: 640px) {
+      .landing-header { padding: 12px 16px; }
+      .trade-scene { height: 240px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .caret { animation: none; }
+      .step-card, .feat-card { transition: none; }
+    }
+  </style>
+</head>
+<body class="landing-body">
+
+  <!-- Main Landing Header -->
+  <header class="landing-header">
+    <div class="brand-logo-text">
+      <span class="lg">Dollar</span><span class="lp">printer</span>
+    </div>
+    <a id="login-nav-btn" href="dashboard.html" class="btn-login-now">Login Now &rarr;</a>
+  </header>
+
+  <!-- Live price marquee (filled by script below) -->
+  <div class="asset-ticker-bar">
+    <div class="marquee">
+      <div class="marquee-track" id="ticker-track"></div>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+      Tools for Deriv traders
+    </div>
+
+    <h1><span id="typed"></span><span class="caret"></span></h1>
+    <p class="hero-sub">Live digit stats, pattern scanners and a practice simulator for Deriv volatility indices, with loss limits built into the bot runner.</p>
+
+    <div class="hero-cta-group">
+      <a id="hero-start-btn" href="dashboard.html" class="btn-hero-start">Start Trading Now &rarr;</a>
+      <a href="https://deriv.com/signup/" target="_blank" rel="noopener" class="btn-hero-signup">Sign up on Deriv</a>
+    </div>
+
+    <div class="hero-subtext">
+      <span><span class="ck">&#10003;</span>Free to browse the tools</span>
+      <span><span class="ck">&#10003;</span>Practise on a Deriv demo account</span>
+    </div>
+  </section>
+
+  <!-- 3D Trades Scene -->
+  <section class="trade-scene" aria-hidden="true">
+    <div class="trade-stage">
+      <div class="trade-floor"></div>
+
+      <div class="candle"     style="--i:0;  --h:70px;  --z:0px;"></div>
+      <div class="candle red" style="--i:1;  --h:100px; --z:30px;"></div>
+      <div class="candle"     style="--i:2;  --h:130px; --z:-20px;"></div>
+      <div class="candle"     style="--i:3;  --h:90px;  --z:40px;"></div>
+      <div class="candle red" style="--i:4;  --h:150px; --z:0px;"></div>
+      <div class="candle"     style="--i:5;  --h:120px; --z:-30px;"></div>
+      <div class="candle"     style="--i:6;  --h:170px; --z:20px;"></div>
+      <div class="candle red" style="--i:7;  --h:110px; --z:-10px;"></div>
+      <div class="candle"     style="--i:8;  --h:190px; --z:35px;"></div>
+      <div class="candle"     style="--i:9;  --h:160px; --z:-25px;"></div>
+      <div class="candle"     style="--i:10; --h:215px; --z:10px;"></div>
+
+      <div class="coin">$</div>
+    </div>
+  </section>
+
+  <!-- Three steps -->
+  <section class="steps">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <h4>Pick a tool</h4>
+      <p>Start with the dashboard for live stats, or open the digit tools and the pattern scanner to watch several markets at once.</p>
+      <span class="step-where">Dashboard, Pro AI</span>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <h4>Study the numbers</h4>
+      <p>See up to 5,000 ticks of digit history, even/odd and over/under results, and how your chosen pattern has really performed.</p>
+      <span class="step-where">Bulk Trader, Analysis Tool</span>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <h4>Practise first</h4>
+      <p>Try your stake, take profit, stop loss and martingale with virtual money and see what a losing streak costs before you risk any real money.</p>
+      <span class="step-where">Dual Edge</span>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <div class="section-head">
+    <span class="tag">PLATFORM</span>
+    <h2>Tools you can use today</h2>
+    <p>Everything below works in your browser right now, with live data from Deriv.</p>
+  </div>
+
+  <section class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+      </div>
+      <h3>Live Market Stats</h3>
+      <span class="feat-sub">Last 100 ticks, updated live</span>
+      <p>Ten Volatility indices ranked by their biggest lean in direction and even/odd, with plain notes on what the numbers do not tell you.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>
+      </div>
+      <h3>Digit Tools</h3>
+      <span class="feat-sub">Circles, history and patterns</span>
+      <p>Ten live digit circles, an even/odd and over/under strip, and a scanner for six digit patterns across ten markets.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg>
+      </div>
+      <h3>Practice Simulator</h3>
+      <span class="feat-sub">Virtual money only</span>
+      <p>Run stake, take profit, stop loss and martingale on live ticks and see the real cost of a losing streak, with a payout margin included.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16h6"/></svg>
+      </div>
+      <h3>Bot Runner with Limits</h3>
+      <span class="feat-sub">Your Deriv account, your rules</span>
+      <p>Log in through Deriv and run a simple digit bot that stops itself at your loss limit, trade limit or stake cap.</p>
+    </div>
+  </section>
+
+  <!-- Why use -->
+  <section class="why-wrap">
+    <div class="section-head" style="margin-bottom: 28px;">
+      <span class="tag">WHY DOLLARPRINTER</span>
+      <h2>Why use Dollarprinter?</h2>
+      <p>Honest tools, with the limits spelled out.</p>
+    </div>
+
+    <div class="why-grid">
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Log in through Deriv, and we never see your password</span>
+      </div>
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Live data straight from Deriv's own price feed</span>
+      </div>
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Practise first with a demo account and the simulator</span>
+      </div>
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Loss limit, trade limit and stake cap on the bot runner</span>
+      </div>
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Honest stats: no predictions and no invented win rates</span>
+      </div>
+      <div class="why-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+        <span>Runs in your browser, with nothing to install</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Get started -->
+  <section class="cta-panel">
+    <span class="tag">GET STARTED</span>
+    <h2>Ready to try the tools?</h2>
+    <p>Open the dashboard, log in with your Deriv demo account and practise before you risk anything real.</p>
+    <a id="cta-start-btn" href="dashboard.html" class="btn-hero-start" style="display: inline-block;">Open Dashboard &rarr;</a>
+    <div class="cta-checks">
+      <span><span class="ck">&#10003;</span>Free to browse</span>
+      <span><span class="ck">&#10003;</span>Demo accounts supported</span>
+      <span><span class="ck">&#10003;</span>Loss limits built in</span>
+    </div>
+  </section>
+
+  <!-- Risk disclaimer -->
+  <section class="risk-box">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>
+      Risk Disclaimer
+    </h3>
+    <p>Trading synthetic indices and other leveraged products carries a high level of risk, and these products may not be suitable for everyone. Please make sure you understand the risks:</p>
+    <ul>
+      <li>You may lose some or all of the money you trade with.</li>
+      <li>The statistics on this site describe past ticks only and do not predict future results.</li>
+      <li>Automated bots can lose money quickly, so test on a demo account first.</li>
+      <li>Never trade with borrowed money or money you cannot afford to lose.</li>
+    </ul>
+    <p>Dollarprinter is a tool, not a broker. Trades are placed through your own Deriv account, and Dollarprinter is not endorsed by Deriv.</p>
+  </section>
+
+  <script>
+    // ---------- OAuth / local routing ----------
+    const APP_ID = 1089; // Replace with your production App ID once hosted
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+    if (!isLocal) {
+      const redirectUri = window.location.origin + "/dashboard.html";
+      const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=EN&brand=deriv&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      document.getElementById("login-nav-btn").href = oauthUrl;
+      document.getElementById("hero-start-btn").href = oauthUrl;
+      document.getElementById("cta-start-btn").href = oauthUrl;
+    }
+
+    // ---------- Typewriter headline ----------
+    const PHRASES = ["Trade with better tools", "Test before you trade", "Know your risk first"];
+    const typedEl = document.getElementById("typed");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduceMotion) {
+      typedEl.textContent = PHRASES[0];
+    } else {
+      let phraseIndex = 0;
+      let charIndex = 0;
+      let deleting = false;
+
+      function typeStep() {
+        const full = PHRASES[phraseIndex];
+
+        if (!deleting) {
+          charIndex++;
+          typedEl.textContent = full.slice(0, charIndex);
+          if (charIndex === full.length) {
+            deleting = true;
+            setTimeout(typeStep, 1800);
+            return;
+          }
+          setTimeout(typeStep, 70);
+        } else {
+          charIndex--;
+          typedEl.textContent = full.slice(0, charIndex);
+          if (charIndex === 0) {
+            deleting = false;
+            phraseIndex = (phraseIndex + 1) % PHRASES.length;
+            setTimeout(typeStep, 350);
+            return;
+          }
+          setTimeout(typeStep, 35);
+        }
+      }
+      typeStep();
+    }
+
+    // ---------- Live ticker marquee ----------
+    const TICKER_SYMBOLS = [
+      { symbol: "R_25",    label: "VOL 25" },
+      { symbol: "R_50",    label: "VOL 50" },
+      { symbol: "R_75",    label: "VOL 75" },
+      { symbol: "R_100",   label: "VOL 100" },
+      { symbol: "1HZ10V",  label: "VOL 10 (1S)" },
+      { symbol: "1HZ100V", label: "VOL 100 (1S)" },
+      { symbol: "RDBULL",  label: "BULL MARKET" },
+      { symbol: "RDBEAR",  label: "BEAR MARKET" }
+    ];
+
+    const lastQuotes = {};
+
+    function buildTicker() {
+      const track = document.getElementById("ticker-track");
+      // Build the list twice so the -50% scroll loops without a jump
+      let html = "";
+      for (let round = 0; round < 2; round++) {
+        TICKER_SYMBOLS.forEach(item => {
+          html += `
+            <span class="tick-item" data-symbol="${item.symbol}">
+              ${item.label} <b>---</b>
+            </span>`;
+        });
+      }
+      track.innerHTML = html;
+    }
+
+    function updateTicker(symbol, quote) {
+      const previous = lastQuotes[symbol];
+      lastQuotes[symbol] = quote;
+
+      document.querySelectorAll(`.tick-item[data-symbol="${symbol}"]`).forEach(el => {
+        el.querySelector("b").textContent = quote;
+        if (previous !== undefined) {
+          el.classList.remove("up", "down");
+          if (quote > previous) el.classList.add("up");
+          if (quote < previous) el.classList.add("down");
+        }
+      });
+    }
+
+    function connectTicker() {
+      const socket = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+
+      socket.onopen = () => {
+        TICKER_SYMBOLS.forEach(item => {
+          socket.send(JSON.stringify({ ticks: item.symbol, subscribe: 1 }));
+        });
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.msg_type === "tick" && data.tick) {
+          const digits = data.tick.pip_size || 2;
+          updateTicker(data.tick.symbol, Number(data.tick.quote).toFixed(digits));
+        }
+      };
+
+      socket.onclose = () => setTimeout(connectTicker, 3000);
+    }
+
+    buildTicker();
+    connectTicker();
+  </script>
+</body>
+</html>

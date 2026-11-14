@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Bot Builder</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .field-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .hidden { display: none !important; }
+    .stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 800; }
+
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill-state { font-size: 0.72rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-muted); }
+    .pill-state.on { color: var(--green); border-color: rgba(47, 211, 107, 0.5); background: rgba(47, 211, 107, 0.1); }
+    .pill-state.bad { color: var(--red); border-color: rgba(255, 59, 48, 0.5); background: rgba(255, 59, 48, 0.1); }
+
+    .banner {
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .banner.real { background: rgba(255, 59, 48, 0.08); border-color: rgba(255, 59, 48, 0.4); justify-content: flex-start; }
+    .banner.real input { width: 20px; height: 20px; accent-color: var(--red); }
+
+    /* Blocks */
+    .blk { background: #0a0f1d; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+    .blk-head {
+      display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+      background: linear-gradient(90deg, #1d4ed8, #1e40af); font-weight: 700; font-size: 0.88rem; color: #fff;
+    }
+    .blk-num { width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, 0.18); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+    .blk-body { padding: 16px; }
+    .blk-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+    .blk .select-box, .blk .token-input-sm { width: 100%; }
+    .toggle-row { display: flex; align-items: center; gap: 10px; height: 40px; }
+    .toggle-row input { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
+
+    .preset-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+    .preset-row .lbl { font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); text-transform: uppercase; margin-right: 4px; }
+
+    .summary-text { font-size: 0.85rem; line-height: 1.7; color: #cbd5e1; }
+    .summary-text b { color: #fff; }
+    .risk-line { font-size: 0.8rem; line-height: 1.6; margin-bottom: 6px; color: #cbd5e1; }
+    .risk-line.bad { color: var(--red); font-weight: 700; }
+    .risk-line.ok { color: var(--green); }
+
+    .saved-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; font-size: 0.82rem; }
+    .saved-item .acts { display: flex; gap: 8px; }
+    .saved-item .action-pill { padding: 5px 12px; font-size: 0.75rem; }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 18px; min-height: 30px; }
+    .chip {
+      width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-family: var(--mono); font-weight: 700; font-size: 0.82rem;
+      border: 1px solid var(--border); background: var(--bg-element);
+    }
+    .chip.last { border-color: var(--cyan); color: var(--cyan); }
+    .btn-stop { background: linear-gradient(135deg, var(--red), var(--red-deep)) !important; color: #fff !important; }
+    .btn-run-bot:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab active" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>BOT BUILDER</span>
+        <span>BUILD YOUR OWN DIGIT STRATEGY</span>
+        <span>SEE THE RISK BEFORE YOU RUN</span>
+        <span>START WITH A DEMO ACCOUNT</span>
+        <span>BOT BUILDER</span>
+        <span>BUILD YOUR OWN DIGIT STRATEGY</span>
+        <span>SEE THE RISK BEFORE YOU RUN</span>
+        <span>START WITH A DEMO ACCOUNT</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 150px; max-width: 480px; margin-bottom: 10px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:30px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:48px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:62px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:44px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:72px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:58px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:80px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:54px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:90px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:76px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:98px; --z:5px;"></div>
+          <div class="coin" style="width: 42px; height: 42px; font-size: 1.1rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <div>
+          <h2>Bot Builder</h2>
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Build a digit strategy from three blocks, check the risk, then run it on your Deriv account.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill-state" id="pill-conn">Connecting...</span>
+          <span class="pill-state" id="pill-acct">Not logged in</span>
+        </div>
+      </div>
+
+      <!-- Login banner (hidden once logged in) -->
+      <div class="banner" id="bb-login">
+        <span>You are not logged in, so the Run button is locked. You can still build and save strategies. Log in with Deriv (a demo account is best to start), and you will come back to the Dashboard. Then open this page again.</span>
+        <a id="bb-login-link" href="#" class="btn-deriv-login">Log in with Deriv</a>
+      </div>
+
+      <!-- Real money confirmation (shown only for real accounts) -->
+      <div class="banner real" id="bb-real" style="display: none;">
+        <input type="checkbox" id="bb-confirm-real" />
+        <label for="bb-confirm-real">I understand this bot trades with REAL money on my account and I can lose it.</label>
+      </div>
+
+      <!-- Quick strategies -->
+      <div class="preset-row">
+        <span class="lbl">Quick strategy</span>
+        <button class="action-pill" data-preset="over1">Over 1 pattern</button>
+        <button class="action-pill" data-preset="under8">Under 8 pattern</button>
+        <button class="action-pill" data-preset="oddafter">Odd after evens</button>
+        <button class="action-pill" data-preset="over3">Steady Over 3</button>
+      </div>
+
+      <!-- Block 1 -->
+      <div class="blk">
+        <div class="blk-head"><span class="blk-num">1</span>Trade parameters</div>
+        <div class="blk-body">
+          <div class="blk-row">
+            <div>
+              <label class="field-label" for="bb-market">Market</label>
+              <select id="bb-market" class="select-box">
+                <option value="R_100">Volatility 100 Index</option>
+                <option value="1HZ100V">Volatility 100 (1s) Index</option>
+                <option value="R_75">Volatility 75 Index</option>
+                <option value="R_50">Volatility 50 Index</option>
+                <option value="R_25">Volatility 25 Index</option>
+                <option value="R_10">Volatility 10 Index</option>
+                <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                <option value="1HZ75V">Volatility 75 (1s) Index</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="bb-contract">Contract</label>
+              <select id="bb-contract" class="select-box">
+                <option value="DIGITOVER">Digit Over</option>
+                <option value="DIGITUNDER">Digit Under</option>
+                <option value="DIGITEVEN">Digit Even</option>
+                <option value="DIGITODD">Digit Odd</option>
+              </select>
+            </div>
+            <div id="bb-barrier-wrap">
+              <label class="field-label" for="bb-barrier">Barrier digit</label>
+              <select id="bb-barrier" class="select-box"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 2 -->
+      <div class="blk">
+        <div class="blk-head"><span class="blk-num">2</span>Purchase conditions</div>
+        <div class="blk-body">
+          <div class="blk-row">
+            <div>
+              <label class="field-label" for="bb-when">Trade</label>
+              <select id="bb-when" class="select-box">
+                <option value="streak">After a streak of digits</option>
+                <option value="always">On every tick</option>
+              </select>
+            </div>
+            <div id="bb-test-wrap">
+              <label class="field-label" for="bb-test">Streak is</label>
+              <select id="bb-test" class="select-box">
+                <option value="le">Digits at or below</option>
+                <option value="ge">Digits at or above</option>
+                <option value="even">Even digits</option>
+                <option value="odd">Odd digits</option>
+              </select>
+            </div>
+            <div id="bb-value-wrap">
+              <label class="field-label" for="bb-value">Digit</label>
+              <select id="bb-value" class="select-box">
+                <option>0</option><option selected>1</option><option>2</option><option>3</option><option>4</option>
+                <option>5</option><option>6</option><option>7</option><option>8</option><option>9</option>
+              </select>
+            </div>
+            <div id="bb-length-wrap">
+              <label class="field-label" for="bb-length">In a row (1 to 10)</label>
+              <input type="number" id="bb-length" value="3" min="1" max="10" step="1" class="token-input-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Block 3 -->
+      <div class="blk">
+        <div class="blk-head"><span class="blk-num">3</span>Limits and restart</div>
+        <div class="blk-body">
+          <div class="blk-row">
+            <div>
+              <label class="field-label" for="bb-stake">Stake</label>
+              <input type="number" id="bb-stake" value="0.5" min="0.35" step="0.05" class="token-input-sm" />
+            </div>
+            <div>
+              <label class="field-label" for="bb-tp">Take profit</label>
+              <input type="number" id="bb-tp" value="5" min="0.1" step="0.5" class="token-input-sm" />
+            </div>
+            <div>
+              <label class="field-label" for="bb-sl">Stop loss</label>
+              <input type="number" id="bb-sl" value="10" min="0.1" step="0.5" class="token-input-sm" />
+            </div>
+            <div>
+              <label class="field-label" for="bb-max">Max trades</label>
+              <input type="number" id="bb-max" value="20" min="1" step="1" class="token-input-sm" />
+            </div>
+            <div>
+              <label class="field-label" for="bb-mart">Martingale</label>
+              <div class="toggle-row"><input type="checkbox" id="bb-mart" /><span style="font-size: 0.8rem; color: var(--text-muted);">Multiply stake after a loss</span></div>
+            </div>
+          </div>
+          <div class="blk-row hidden" id="bb-mart-fields" style="margin-top: 14px;">
+            <div>
+              <label class="field-label" for="bb-mult">Multiplier</label>
+              <input type="number" id="bb-mult" value="2" min="1.1" step="0.1" class="token-input-sm" />
+            </div>
+            <div>
+              <label class="field-label" for="bb-steps">Martingale steps</label>
+              <input type="number" id="bb-steps" value="3" min="1" step="1" class="token-input-sm" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary and risk preview -->
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 18px;">
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">PLAN</span><span class="sig-tag fall">SUMMARY</span></div>
+          <h4>What this bot does</h4>
+          <p class="summary-text" id="bb-summary" style="margin-top: 8px;"></p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">CHECK</span><span class="sig-tag odd">RISK</span></div>
+          <h4>Risk preview</h4>
+          <div id="bb-risk" style="margin-top: 8px;"></div>
+        </div>
+      </div>
+
+      <!-- Save and load -->
+      <div class="blk">
+        <div class="blk-head"><span class="blk-num">4</span>Save and load</div>
+        <div class="blk-body">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="bb-save-name" placeholder="Strategy name" maxlength="30" class="token-input-sm" style="flex: 1; min-width: 180px;" />
+            <button class="action-pill" id="bb-save">Save strategy</button>
+          </div>
+          <div id="bb-saved"></div>
+          <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 10px;">Saved strategies stay in this browser on this computer only.</p>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;">
+        <button class="btn-run-bot" id="bb-run" disabled>▶ Run Bot</button>
+        <button class="action-pill" id="bb-disconnect" style="display: none;">Disconnect</button>
+        <div class="live-quote-box">QUOTE: <span id="bb-quote">---.--</span></div>
+      </div>
+
+      <!-- Last digits -->
+      <div class="chip-row" id="bb-digits"></div>
+
+      <!-- Scoreboard -->
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 20px;">
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">P/L</span><span class="sig-tag fall">SESSION</span></div>
+          <h4>Session P/L</h4>
+          <p class="stat-value" id="bb-pl">0.00</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">COUNT</span><span class="sig-tag fall">TRADES</span></div>
+          <h4>Trades Done</h4>
+          <p class="stat-value" id="bb-trades">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">W / L</span><span class="sig-tag odd">RESULTS</span></div>
+          <h4>Wins / Losses</h4>
+          <p class="stat-value" id="bb-wl">0 / 0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">NEXT</span><span class="sig-tag odd">STAKE</span></div>
+          <h4>Current Stake</h4>
+          <p class="stat-value" id="bb-stake-now">0.00</p>
+          <p style="color: var(--text-muted); font-size: 0.78rem;" id="bb-step">Martingale step 0</p>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div id="bb-log" class="terminal-log-box" style="height: 160px;">Build a strategy and press Run Bot after logging in.</div>
+
+      <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Bots place real trades on your Deriv account. Each tick on a volatility index is random, so no pattern or setting gives a bot an edge, and Deriv pays less than fair odds, so winning often does not mean profit. Martingale makes small wins common and rare losses large. The bot stops at your take profit, stop loss or trade limit, and it will not accept a stake above <span id="cap-stake">10</span> or a stop loss above <span id="cap-loss">50</span>. Risk warning: you can lose your whole stake. Test on a demo account first, and only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script src="bot-engine.js"></script>
+  <script src="ai-assistant.js"></script>
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    const $ = id => document.getElementById(id);
+
+    $("cap-stake").textContent = DPBot.LIMITS.maxStake;
+    $("cap-loss").textContent = DPBot.LIMITS.maxLoss;
+
+    const FORM_IDS = [
+      "bb-market", "bb-contract", "bb-barrier", "bb-when", "bb-test", "bb-value", "bb-length",
+      "bb-stake", "bb-tp", "bb-sl", "bb-max", "bb-mart", "bb-mult", "bb-steps"
+    ];
+    const LOCK_IDS = FORM_IDS.concat(["bb-confirm-real", "bb-save-name", "bb-save"]);
+    const SAVE_KEY = "dp_saved_strategies";
+    const MAX_SAVED = 20;
+
+    // ---------- Log ----------
+    function logLine(text, color) {
+      const box = $("bb-log");
+      if (!box.dataset.started) { box.textContent = ""; box.dataset.started = "1"; }
+      const line = document.createElement("div");
+      line.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+      if (color) line.style.color = color;
+      box.appendChild(line);
+      while (box.children.length > 120) box.removeChild(box.firstChild);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ---------- Reading the form ----------
+    function buildStrategy() {
+      const type = $("bb-contract").value;
+      const contract = { type: type };
+      if (type === "DIGITOVER" || type === "DIGITUNDER") {
+        contract.barrier = parseInt($("bb-barrier").value, 10);
+      }
+
+      let entry = { kind: "always" };
+      if ($("bb-when").value === "streak") {
+        entry = {
+          kind: "streak",
+          test: $("bb-test").value,
+          value: parseInt($("bb-value").value, 10),
+          length: parseInt($("bb-length").value, 10)
+        };
+      }
+      return { name: "Custom strategy", contract: contract, entry: entry };
+    }
+
+    function readSettings() {
+      return {
+        stake: parseFloat($("bb-stake").value),
+        tp: parseFloat($("bb-tp").value),
+        sl: parseFloat($("bb-sl").value),
+        maxTrades: parseInt($("bb-max").value, 10),
+        martingale: $("bb-mart").checked,
+        multiplier: parseFloat($("bb-mult").value),
+        maxSteps: parseInt($("bb-steps").value, 10),
+        confirmReal: $("bb-confirm-real").checked
+      };
+    }
+
+    // ---------- Barrier choices depend on the contract ----------
+    function fillBarrier(type, keep) {
+      const sel = $("bb-barrier");
+      const low = type === "DIGITOVER" ? 0 : 1;
+      const high = type === "DIGITOVER" ? 8 : 9;
+      const previous = parseInt(keep !== undefined ? keep : sel.value, 10);
+
+      let html = "";
+      for (let i = low; i <= high; i++) html += '<option value="' + i + '">' + i + "</option>";
+      sel.innerHTML = html;
+      sel.value = (previous >= low && previous <= high) ? previous : (type === "DIGITOVER" ? 1 : 8);
+    }
+
+    // ---------- Summary and risk preview ----------
+    function fmtPct(n) { return n < 0.01 ? "less than 0.01" : n.toFixed(2); }
+
+    function renderSummary() {
+      const s = buildStrategy();
+      const marketName = $("bb-market").selectedOptions[0].textContent;
+      $("bb-summary").innerHTML =
+        "<b>" + DPBot.describeContract(s.contract) + "</b> on " + marketName + ". " +
+        DPBot.describeEntry(s.entry) + ".<br>" +
+        "Chance per trade: <b>" + DPBot.chance(s.contract) + "%</b>. " +
+        "Deriv pays less than fair odds, so winning often does not mean profit.";
+    }
+
+    function renderRisk() {
+      const s = buildStrategy();
+      const st = readSettings();
+      const box = $("bb-risk");
+      const lines = [];
+
+      function add(text, cls) { lines.push('<div class="risk-line ' + (cls || "") + '">' + text + "</div>"); }
+
+      if (!(st.stake > 0)) { box.innerHTML = '<div class="risk-line">Enter a stake to see the risk preview.</div>'; return; }
+
+      const chance = DPBot.chance(s.contract) / 100;
+      add("Each trade risks " + st.stake.toFixed(2) + ".");
+
+      if (st.stake > DPBot.LIMITS.maxStake) {
+        add("The stake is above the " + DPBot.LIMITS.maxStake + " cap, so the bot will refuse to start.", "bad");
+      }
+
+      if (st.martingale && st.multiplier >= 1.1 && st.maxSteps >= 1) {
+        const biggest = st.stake * Math.pow(st.multiplier, st.maxSteps);
+        const total = st.stake * (Math.pow(st.multiplier, st.maxSteps + 1) - 1) / (st.multiplier - 1);
+        const runLength = st.maxSteps + 1;
+        const lossRun = Math.pow(1 - chance, runLength) * 100;
+
+        add("Biggest stake in a losing run: " + biggest.toFixed(2) + ".");
+        add("A full losing run of " + runLength + " trades in a row costs " + total.toFixed(2) +
+            ". Each time the bot starts a new run, that happens about " + fmtPct(lossRun) + "% of the time.");
+
+        if (biggest > DPBot.LIMITS.maxStake) {
+          add("The biggest stake is above the " + DPBot.LIMITS.maxStake + " cap, so the bot will refuse to start. Lower the stake, multiplier or steps.", "bad");
+        }
+        if (st.sl > 0 && total >= st.sl) {
+          add("A full losing run would reach your stop loss of " + st.sl + ".", "bad");
+        } else if (st.sl > 0) {
+          add("A full losing run stays under your stop loss of " + st.sl + ".", "ok");
+        }
+      } else if (st.sl > 0) {
+        add("Without martingale, your stop loss is reached after about " + Math.ceil(st.sl / st.stake) + " losing trades.");
+      }
+
+      if (st.sl > DPBot.LIMITS.maxLoss) {
+        add("The stop loss is above the " + DPBot.LIMITS.maxLoss + " cap, so the bot will refuse to start.", "bad");
+      }
+      box.innerHTML = lines.join("");
+    }
+
+    // ---------- Show or hide fields ----------
+    function refresh() {
+      const type = $("bb-contract").value;
+      const isOverUnder = type === "DIGITOVER" || type === "DIGITUNDER";
+      $("bb-barrier-wrap").classList.toggle("hidden", !isOverUnder);
+
+      const streak = $("bb-when").value === "streak";
+      $("bb-test-wrap").classList.toggle("hidden", !streak);
+      $("bb-length-wrap").classList.toggle("hidden", !streak);
+      const needsValue = streak && ($("bb-test").value === "le" || $("bb-test").value === "ge");
+      $("bb-value-wrap").classList.toggle("hidden", !needsValue);
+
+      $("bb-mart-fields").classList.toggle("hidden", !$("bb-mart").checked);
+
+      renderSummary();
+      renderRisk();
+    }
+
+    // ---------- Form snapshots (for presets and saving) ----------
+    function getForm() {
+      const o = {};
+      FORM_IDS.forEach(function (id) {
+        const el = $(id);
+        o[id] = el.type === "checkbox" ? el.checked : el.value;
+      });
+      return o;
+    }
+
+    function setForm(o) {
+      if (o["bb-contract"]) $("bb-contract").value = o["bb-contract"];
+      fillBarrier($("bb-contract").value, o["bb-barrier"]);
+
+      FORM_IDS.forEach(function (id) {
+        if (id === "bb-contract" || id === "bb-barrier" || !(id in o)) return;
+        const el = $(id);
+        if (el.type === "checkbox") {
+          el.checked = !!o[id];
+        } else if (el.tagName === "SELECT") {
+          const exists = Array.prototype.some.call(el.options, function (opt) { return opt.value === String(o[id]); });
+          if (exists) el.value = o[id];
+        } else {
+          el.value = o[id];
+        }
+      });
+
+      if (o["bb-market"]) DPBot.setMarket($("bb-market").value);
+      refresh();
+    }
+
+    const PRESETS = {
+      over1:    { "bb-contract": "DIGITOVER",  "bb-barrier": 1, "bb-when": "streak", "bb-test": "le",   "bb-value": "1", "bb-length": 3 },
+      under8:   { "bb-contract": "DIGITUNDER", "bb-barrier": 8, "bb-when": "streak", "bb-test": "ge",   "bb-value": "8", "bb-length": 3 },
+      oddafter: { "bb-contract": "DIGITODD",                    "bb-when": "streak", "bb-test": "even",                   "bb-length": 4 },
+      over3:    { "bb-contract": "DIGITOVER",  "bb-barrier": 3, "bb-when": "always" }
+    };
+
+    document.querySelectorAll("[data-preset]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (DPBot.snapshot().running) return;
+        setForm(PRESETS[btn.dataset.preset]);
+      });
+    });
+
+    // ---------- Saved strategies ----------
+    function loadSaved() {
+      try {
+        const list = JSON.parse(localStorage.getItem(SAVE_KEY));
+        return Array.isArray(list) ? list : [];
+      } catch (e) { return []; }
+    }
+
+    function storeSaved(list) {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(list)); return true; } catch (e) { return false; }
+    }
+
+    function renderSaved() {
+      const box = $("bb-saved");
+      box.innerHTML = "";
+      loadSaved().forEach(function (item) {
+        const row = document.createElement("div");
+        row.className = "saved-item";
+
+        const name = document.createElement("span");
+        name.textContent = item.name;
+
+        const acts = document.createElement("span");
+        acts.className = "acts";
+
+        const loadBtn = document.createElement("button");
+        loadBtn.className = "action-pill";
+        loadBtn.textContent = "Load";
+        loadBtn.addEventListener("click", function () {
+          if (DPBot.snapshot().running) return;
+          setForm(item.form);
+          $("bb-save-name").value = item.name;
+          logLine('Loaded "' + item.name + '".', "#94a3b8");
+        });
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "action-pill";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", function () {
+          if (!confirm('Delete "' + item.name + '"?')) return;
+          storeSaved(loadSaved().filter(function (x) { return x.name !== item.name; }));
+          renderSaved();
+        });
+
+        acts.appendChild(loadBtn);
+        acts.appendChild(delBtn);
+        row.appendChild(name);
+        row.appendChild(acts);
+        box.appendChild(row);
+      });
+    }
+
+    $("bb-save").addEventListener("click", function () {
+      const name = $("bb-save-name").value.trim().slice(0, 30);
+      if (!name) { logLine("Type a name before saving.", "#f59e0b"); return; }
+
+      let list = loadSaved().filter(function (x) { return x.name !== name; });
+      if (list.length >= MAX_SAVED) { logLine("You can keep up to " + MAX_SAVED + " saved strategies. Delete one first.", "#f59e0b"); return; }
+      list.push({ name: name, form: getForm() });
+
+      if (storeSaved(list)) {
+        logLine('Saved "' + name + '" in this browser.', "#34c759");
+        renderSaved();
+      } else {
+        logLine("Could not save. Your browser may be blocking storage.", "#f59e0b");
+      }
+    });
+
+    // ---------- Screen updates ----------
+    function onUpdate(s) {
+      const conn = $("pill-conn");
+      conn.textContent = s.connected ? "API Connected" : "Connecting...";
+      conn.className = "pill-state" + (s.connected ? " on" : "");
+
+      const acct = $("pill-acct");
+      if (s.authorized && s.account) {
+        acct.textContent = s.account.loginid + (s.account.isVirtual ? " (Demo) " : " (REAL) ") +
+                           s.account.balance.toFixed(2) + " " + s.account.currency;
+        acct.className = "pill-state " + (s.account.isVirtual ? "on" : "bad");
+      } else {
+        acct.textContent = "Not logged in";
+        acct.className = "pill-state";
+      }
+
+      $("bb-login").style.display = s.authorized ? "none" : "flex";
+      $("bb-real").style.display = (s.authorized && s.account && !s.account.isVirtual) ? "flex" : "none";
+      $("bb-disconnect").style.display = s.authorized ? "inline-block" : "none";
+
+      $("bb-quote").textContent = s.quote || "---.--";
+
+      const last = s.digits.slice(-12);
+      $("bb-digits").innerHTML = last.map(function (d, i) {
+        return '<span class="chip' + (i === last.length - 1 ? " last" : "") + '">' + d + "</span>";
+      }).join("");
+
+      const plEl = $("bb-pl");
+      plEl.textContent = (s.profit >= 0 ? "+" : "-") + Math.abs(s.profit).toFixed(2);
+      plEl.style.color = s.profit > 0 ? "var(--green)" : s.profit < 0 ? "var(--red)" : "var(--text-main)";
+      $("bb-trades").textContent = s.trades;
+      $("bb-wl").textContent = s.wins + " / " + s.losses;
+      $("bb-stake-now").textContent = s.running ? s.stake.toFixed(2) : (parseFloat($("bb-stake").value) || 0).toFixed(2);
+      $("bb-step").textContent = "Martingale step " + s.step;
+
+      const run = $("bb-run");
+      run.textContent = s.running ? "■ Stop Bot" : "▶ Run Bot";
+      run.classList.toggle("btn-stop", s.running);
+      run.disabled = !s.authorized && !s.running;
+
+      LOCK_IDS.forEach(function (id) { $(id).disabled = s.running; });
+      document.querySelectorAll("[data-preset]").forEach(function (b) { b.disabled = s.running; });
+      $("bb-market").value = s.symbol;
+    }
+
+    // ---------- Buttons ----------
+    $("bb-run").addEventListener("click", function () {
+      if (DPBot.snapshot().running) {
+        DPBot.stop("Bot stopped by user.", "#f59e0b");
+        return;
+      }
+      const result = DPBot.start(buildStrategy(), readSettings());
+      if (!result.ok) logLine(result.error, "#f59e0b");
+    });
+
+    $("bb-disconnect").addEventListener("click", function () {
+      DPBot.logout();
+      logLine("Disconnected. Your login was cleared from this tab.", "#94a3b8");
+    });
+
+    $("bb-market").addEventListener("change", function (e) {
+      if (!DPBot.setMarket(e.target.value)) e.target.value = DPBot.snapshot().symbol;
+      renderSummary();
+    });
+
+    $("bb-contract").addEventListener("change", function () {
+      fillBarrier($("bb-contract").value);
+      refresh();
+    });
+
+    FORM_IDS.forEach(function (id) {
+      if (id === "bb-market" || id === "bb-contract") return;
+      $(id).addEventListener("input", refresh);
+      $(id).addEventListener("change", refresh);
+    });
+    $("bb-stake").addEventListener("input", function () { onUpdate(DPBot.snapshot()); });
+
+    $("bb-login-link").href = DPBot.loginUrl();
+
+    // ---------- Start ----------
+    fillBarrier("DIGITOVER", 1);
+    refresh();
+    renderSaved();
+    DPBot.init({ log: logLine, update: onUpdate });
+  </script>
+</body>
+</html>

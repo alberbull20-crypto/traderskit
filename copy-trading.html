@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Copy Trading</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab active" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>COPY TRADING</span>
+        <span>LEARN HOW IT WORKS BEFORE YOU COPY</span>
+        <span>PAST RESULTS DO NOT GUARANTEE FUTURE RESULTS</span>
+        <span>COPY TRADING</span>
+        <span>LEARN HOW IT WORKS BEFORE YOU COPY</span>
+        <span>PAST RESULTS DO NOT GUARANTEE FUTURE RESULTS</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 170px; max-width: 520px; margin-bottom: 14px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:35px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:55px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:70px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:50px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:80px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:65px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:90px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:60px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:100px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:85px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:110px; --z:5px;"></div>
+          <div class="coin" style="width: 46px; height: 46px; font-size: 1.2rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <h2>Copy Trading</h2>
+      <p style="color: var(--text-muted); margin-top: 6px; margin-bottom: 20px;">
+        Copy trading lets your account automatically repeat the trades of another trader. It is run by Deriv, not by this site, so you set it up in your Deriv account.
+      </p>
+
+      <div class="section-title-row">
+        <h3>How It Works</h3>
+        <span class="signal-count-badge">3 steps</span>
+      </div>
+
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 28px;">
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STEP 1</span>
+            <span class="sig-tag fall">CHOOSE</span>
+          </div>
+          <h4>Pick a Trader</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Look at a trader's history, how long they have traded, and how big their losing periods were, not only their best month.</p>
+        </div>
+
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STEP 2</span>
+            <span class="sig-tag odd">LIMIT</span>
+          </div>
+          <h4>Set Your Limits</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Decide the most you will put in, the maximum stake per trade, and when copying should stop.</p>
+        </div>
+
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STEP 3</span>
+            <span class="sig-tag fall">WATCH</span>
+          </div>
+          <h4>Monitor and Stop</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Check results regularly. You can stop copying at any time, but trades already opened still finish.</p>
+        </div>
+      </div>
+
+      <div class="section-title-row">
+        <h3>Before You Copy</h3>
+        <span class="signal-count-badge" style="color: var(--red); background: rgba(255, 59, 48, 0.1); border-color: rgba(255, 59, 48, 0.3);">Risks</span>
+      </div>
+
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-bottom: 28px;">
+        <div class="signal-card">
+          <h4>You can still lose</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">A trader with strong past results can have a bad run. Your account takes the same losses they do.</p>
+        </div>
+        <div class="signal-card">
+          <h4>Delays change results</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Your trades may open at slightly different prices than theirs, so your results can differ from theirs.</p>
+        </div>
+        <div class="signal-card">
+          <h4>Check availability</h4>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 8px;">Copy trading features and country availability are set by Deriv and can change, so confirm in your Deriv account.</p>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 10px;">
+        <a href="https://app.deriv.com" target="_blank" rel="noopener" class="btn-hero-start" style="display: inline-block;">Open Deriv &rarr;</a>
+      </div>
+
+      <p style="margin-top: 22px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Risk warning: copy trading carries a high level of risk and you can lose all of your money. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // Mobile hamburger menu toggle
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+  </script>
+</body>
+</html>

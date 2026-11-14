@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Pro AI Scanner</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .strategy-card { cursor: pointer; }
+    .strategy-card.selected {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue), 0 14px 30px rgba(59, 130, 246, 0.25);
+    }
+    .strategy-card p { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
+
+    .scan-table { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+    .m-row {
+      display: grid;
+      grid-template-columns: 1.7fr 0.5fr 2fr 0.6fr 1fr;
+      gap: 12px;
+      align-items: center;
+      background: linear-gradient(160deg, var(--bg-element), #0d1426);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .m-row.ready { border-color: var(--green); box-shadow: 0 0 16px rgba(47, 211, 107, 0.25); }
+    .m-name { font-weight: 700; }
+    .m-digit { font-family: var(--mono); font-weight: 800; font-size: 1.1rem; color: var(--cyan); text-align: center; }
+    .m-prog { height: 8px; background: #0a0f1d; border-radius: 4px; overflow: hidden; }
+    .m-prog-fill { height: 100%; background: linear-gradient(90deg, #1d4ed8, var(--blue)); border-radius: 4px; transition: width 0.25s; }
+    .m-row.ready .m-prog-fill { background: linear-gradient(90deg, #3be07f, var(--green)); }
+    .m-count { font-family: var(--mono); color: var(--text-muted); text-align: center; }
+    .m-chip {
+      text-align: center; font-size: 0.68rem; font-weight: 800; letter-spacing: 1px;
+      padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .m-row.ready .m-chip { color: var(--green); border-color: rgba(47, 211, 107, 0.5); background: rgba(47, 211, 107, 0.1); }
+    @media (max-width: 640px) {
+      .m-row { grid-template-columns: 1.6fr 0.5fr 0.6fr 1fr; }
+      .m-prog { display: none; }
+    }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab active" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>PRO AI SCANNER</span>
+        <span>WATCHING 10 MARKETS AT ONCE</span>
+        <span>DIGIT PATTERN ALERTS</span>
+        <span>ALERTS ONLY, NO TRADES PLACED</span>
+        <span>PRO AI SCANNER</span>
+        <span>WATCHING 10 MARKETS AT ONCE</span>
+        <span>DIGIT PATTERN ALERTS</span>
+        <span>ALERTS ONLY, NO TRADES PLACED</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 150px; max-width: 480px; margin-bottom: 10px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:30px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:48px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:62px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:44px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:72px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:58px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:80px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:54px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:90px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:76px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:98px; --z:5px;"></div>
+          <div class="coin" style="width: 42px; height: 42px; font-size: 1.1rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <h2>Pro AI Pattern Scanner</h2>
+        <span id="scan-status" style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--mono);">Connecting...</span>
+      </div>
+      <p style="color: var(--text-muted); margin-bottom: 18px; font-size: 0.9rem;">
+        Pick a strategy and the scanner watches every market below. It tells you when the pattern is complete. It does not place any trades.
+      </p>
+
+      <!-- Strategy cards -->
+      <div class="signals-cards-grid" id="strategy-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 26px;"></div>
+
+      <!-- Reality check -->
+      <div class="section-title-row">
+        <h3>Reality Check</h3>
+        <span class="signal-count-badge" id="rc-name">--</span>
+      </div>
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: 26px;">
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">COUNT</span><span class="sig-tag fall">PATTERNS</span></div>
+          <h4>Patterns Seen</h4>
+          <p id="rc-triggers" style="font-family: var(--mono); font-size: 1.6rem; font-weight: 800;">0</p>
+          <p style="color: var(--text-muted); font-size: 0.78rem;">Since you opened this page, across all markets.</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">RESULT</span><span class="sig-tag odd">NEXT TICK</span></div>
+          <h4>Next Tick Won</h4>
+          <p id="rc-wins" style="font-family: var(--mono); font-size: 1.6rem; font-weight: 800;">0 (--%)</p>
+          <p style="color: var(--text-muted); font-size: 0.78rem;">How often the tick after the pattern would have won.</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">BASELINE</span><span class="sig-tag fall">ANY TICK</span></div>
+          <h4>Chance Without Pattern</h4>
+          <p id="rc-base" style="font-family: var(--mono); font-size: 1.6rem; font-weight: 800;">--%</p>
+          <p style="color: var(--text-muted); font-size: 0.78rem;">The chance a random tick wins. If the line above is not clearly higher, the pattern adds nothing.</p>
+        </div>
+      </div>
+
+      <!-- Market scanner -->
+      <div class="section-title-row">
+        <h3>Markets</h3>
+        <span class="signal-count-badge" id="ready-count">0 ready</span>
+      </div>
+      <div class="scan-table" id="scan-table"></div>
+
+      <!-- Log -->
+      <div id="scan-log" class="terminal-log-box">Waiting for the pattern...</div>
+
+      <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Each tick on a volatility index is random and independent of the ones before it, so a completed pattern does not make the next tick more likely to win. Small samples can look good by luck. Risk warning: you can lose your whole stake. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    // ---------- Settings ----------
+    const APP_ID = 1089;
+    const KEEP_DIGITS = 30;
+
+    const STRATEGIES = [
+      { id: "over1",  label: "Over 1 Pro",  kind: "over",  barrier: 1, streak: 3 },
+      { id: "under8", label: "Under 8 Pro", kind: "under", barrier: 8, streak: 3 },
+      { id: "over2",  label: "Over 2 Pro",  kind: "over",  barrier: 2, streak: 4 },
+      { id: "under7", label: "Under 7 Pro", kind: "under", barrier: 7, streak: 4 },
+      { id: "over3",  label: "Over 3 Pro",  kind: "over",  barrier: 3, streak: 5 },
+      { id: "under6", label: "Under 6 Pro", kind: "under", barrier: 6, streak: 5 }
+    ];
+
+    const MARKET_LIST = [
+      { symbol: "R_10",     label: "Volatility 10" },
+      { symbol: "R_25",     label: "Volatility 25" },
+      { symbol: "R_50",     label: "Volatility 50" },
+      { symbol: "R_75",     label: "Volatility 75" },
+      { symbol: "R_100",    label: "Volatility 100" },
+      { symbol: "1HZ10V",   label: "Volatility 10 (1s)" },
+      { symbol: "1HZ25V",   label: "Volatility 25 (1s)" },
+      { symbol: "1HZ50V",   label: "Volatility 50 (1s)" },
+      { symbol: "1HZ75V",   label: "Volatility 75 (1s)" },
+      { symbol: "1HZ100V",  label: "Volatility 100 (1s)" }
+    ];
+
+    // ---------- State ----------
+    let socket;
+    let current = STRATEGIES[0];
+    let stats = { triggers: 0, wins: 0 };
+    const markets = {};
+    MARKET_LIST.forEach(m => {
+      markets[m.symbol] = { label: m.label, pip: 2, digits: [], streak: 0, last: null, ready: false };
+    });
+
+    // ---------- Strategy rules ----------
+    function matches(d) {
+      return current.kind === "over" ? d <= current.barrier : d >= current.barrier;
+    }
+    function nextWins(d) {
+      return current.kind === "over" ? d > current.barrier : d < current.barrier;
+    }
+    function baselinePct() {
+      return current.kind === "over" ? (9 - current.barrier) * 10 : current.barrier * 10;
+    }
+    function describe(s) {
+      return s.kind === "over"
+        ? "Waits for " + s.streak + " digits at or below " + s.barrier
+        : "Waits for " + s.streak + " digits at or above " + s.barrier;
+    }
+
+    function recomputeStreak(m) {
+      let n = 0;
+      for (let i = m.digits.length - 1; i >= 0; i--) {
+        if (matches(m.digits[i])) n++;
+        else break;
+      }
+      m.streak = n;
+      m.ready = n >= current.streak;
+    }
+
+    // ---------- Rendering ----------
+    function renderStrategies() {
+      const grid = document.getElementById("strategy-grid");
+      grid.innerHTML = STRATEGIES.map(s =>
+        '<div class="signal-card strategy-card' + (s.id === current.id ? " selected" : "") + '" data-id="' + s.id + '">' +
+          '<div class="signal-card-header">' +
+            '<span class="sig-num">PATTERN</span>' +
+            '<span class="sig-tag ' + (s.kind === "over" ? "fall" : "odd") + '">' + s.kind.toUpperCase() + " " + s.barrier + '</span>' +
+          '</div>' +
+          '<h4>' + s.label + '</h4>' +
+          '<p>' + describe(s) + '</p>' +
+        '</div>'
+      ).join("");
+
+      grid.querySelectorAll(".strategy-card").forEach(card => {
+        card.addEventListener("click", () => selectStrategy(card.dataset.id));
+      });
+    }
+
+    function renderStats() {
+      document.getElementById("rc-name").textContent = current.label;
+      document.getElementById("rc-triggers").textContent = stats.triggers;
+      const pct = stats.triggers ? ((stats.wins / stats.triggers) * 100).toFixed(1) + "%" : "--%";
+      document.getElementById("rc-wins").textContent = stats.wins + " (" + pct + ")";
+      document.getElementById("rc-base").textContent = baselinePct() + "%";
+    }
+
+    function renderMarkets() {
+      let readyCount = 0;
+      const html = MARKET_LIST.map(info => {
+        const m = markets[info.symbol];
+        if (m.ready) readyCount++;
+        const shown = Math.min(m.streak, current.streak);
+        const width = (shown / current.streak) * 100;
+        return '<div class="m-row' + (m.ready ? " ready" : "") + '">' +
+          '<span class="m-name">' + m.label + '</span>' +
+          '<span class="m-digit">' + (m.last === null ? "-" : m.last) + '</span>' +
+          '<div class="m-prog"><div class="m-prog-fill" style="width:' + width + '%"></div></div>' +
+          '<span class="m-count">' + shown + "/" + current.streak + '</span>' +
+          '<span class="m-chip">' + (m.ready ? "READY" : "WATCHING") + '</span>' +
+        '</div>';
+      }).join("");
+      document.getElementById("scan-table").innerHTML = html;
+      document.getElementById("ready-count").textContent = readyCount + " ready";
+    }
+
+    function logLine(text) {
+      const box = document.getElementById("scan-log");
+      if (!box.dataset.started) { box.textContent = ""; box.dataset.started = "1"; }
+      const line = document.createElement("div");
+      line.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+      box.appendChild(line);
+      while (box.children.length > 100) box.removeChild(box.firstChild);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ---------- Strategy switch ----------
+    function selectStrategy(id) {
+      current = STRATEGIES.find(s => s.id === id) || current;
+      stats = { triggers: 0, wins: 0 };
+      MARKET_LIST.forEach(info => recomputeStreak(markets[info.symbol]));
+      renderStrategies();
+      renderStats();
+      renderMarkets();
+      logLine("Strategy changed to " + current.label + ". Counts reset.");
+    }
+
+    // ---------- Ticks ----------
+    function digitOf(price, pip) {
+      return parseInt(Number(price).toFixed(pip).slice(-1), 10);
+    }
+
+    function onHistory(symbol, prices, pip) {
+      const m = markets[symbol];
+      if (!m) return;
+      m.pip = pip || 2;
+      m.digits = prices.map(p => digitOf(p, m.pip)).slice(-KEEP_DIGITS);
+      m.last = m.digits[m.digits.length - 1];
+      recomputeStreak(m);
+    }
+
+    function onTick(tick) {
+      const m = markets[tick.symbol];
+      if (!m) return;
+      m.pip = tick.pip_size || m.pip;
+      const d = digitOf(tick.quote, m.pip);
+
+      // If the pattern was complete before this tick, this tick is the "next tick"
+      if (m.streak >= current.streak) {
+        stats.triggers++;
+        if (nextWins(d)) stats.wins++;
+      }
+
+      m.digits.push(d);
+      if (m.digits.length > KEEP_DIGITS) m.digits.shift();
+      m.last = d;
+
+      const wasReady = m.ready;
+      m.streak = matches(d) ? m.streak + 1 : 0;
+      m.ready = m.streak >= current.streak;
+
+      if (!wasReady && m.ready) {
+        logLine(m.label + ": " + current.label + " pattern complete (" + current.streak + " in a row). Next tick is the entry tick.");
+      }
+
+      renderStats();
+      renderMarkets();
+    }
+
+    // ---------- Connection ----------
+    function connect() {
+      socket = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + APP_ID);
+
+      socket.onopen = () => {
+        document.getElementById("scan-status").textContent = "Watching " + MARKET_LIST.length + " markets";
+        MARKET_LIST.forEach(info => {
+          socket.send(JSON.stringify({
+            ticks_history: info.symbol,
+            count: KEEP_DIGITS,
+            end: "latest",
+            style: "ticks",
+            subscribe: 1
+          }));
+        });
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          document.getElementById("scan-status").textContent = "Error: " + data.error.message;
+          return;
+        }
+        if (data.msg_type === "history") {
+          onHistory(data.echo_req.ticks_history, data.history.prices, data.pip_size);
+          renderMarkets();
+        }
+        if (data.msg_type === "tick") onTick(data.tick);
+      };
+
+      socket.onclose = () => {
+        document.getElementById("scan-status").textContent = "Connection lost. Reconnecting...";
+        setTimeout(connect, 3000);
+      };
+    }
+
+    renderStrategies();
+    renderStats();
+    renderMarkets();
+    connect();
+  </script>
+</body>
+</html>

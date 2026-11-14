@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Analysis Tool</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .digit-bars { display: flex; gap: 8px; height: 220px; margin: 10px 0 26px; }
+    .dbar { flex: 1; display: flex; flex-direction: column; align-items: center; font-family: var(--mono); font-size: 0.7rem; color: var(--text-muted); }
+    .dbar-area { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+    .dbar-fill {
+      width: 100%;
+      min-height: 4px;
+      border-radius: 6px 6px 2px 2px;
+      background: linear-gradient(180deg, var(--blue), #1d4ed8);
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transition: height 0.25s;
+    }
+    .dbar-fill.hot { background: linear-gradient(180deg, #3be07f, var(--green)); box-shadow: 0 0 14px rgba(47, 211, 107, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+    .dbar-fill.cold { background: linear-gradient(180deg, var(--red), var(--red-deep)); box-shadow: 0 0 14px rgba(255, 59, 48, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+    .dbar b { color: #fff; font-size: 0.95rem; margin-top: 6px; }
+    .chip-strip { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .chip {
+      display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center;
+      border-radius: 8px; font-family: var(--mono); font-weight: 700; font-size: 0.82rem;
+      border: 1px solid var(--border); background: var(--bg-element);
+    }
+    .chip.even { border-color: var(--blue); color: var(--cyan); }
+    .chip.odd { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab active" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>ANALYSIS TOOL</span>
+        <span>DIGIT FREQUENCY</span>
+        <span>UP TO 1,000 LIVE TICKS</span>
+        <span>STATISTICS, NOT PREDICTIONS</span>
+        <span>ANALYSIS TOOL</span>
+        <span>DIGIT FREQUENCY</span>
+        <span>UP TO 1,000 LIVE TICKS</span>
+        <span>STATISTICS, NOT PREDICTIONS</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 170px; max-width: 520px; margin-bottom: 14px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:35px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:55px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:70px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:50px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:80px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:65px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:90px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:60px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:100px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:85px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:110px; --z:5px;"></div>
+          <div class="coin" style="width: 46px; height: 46px; font-size: 1.2rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <h2>Advanced Statistical Analytics</h2>
+        <div class="live-quote-box">QUOTE: <span id="an-quote">---.--</span></div>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+        <select id="an-market" class="select-box">
+          <option value="R_100">Volatility 100 Index</option>
+          <option value="1HZ100V">Volatility 100 (1s) Index</option>
+          <option value="R_75">Volatility 75 Index</option>
+          <option value="R_50">Volatility 50 Index</option>
+          <option value="R_25">Volatility 25 Index</option>
+          <option value="R_10">Volatility 10 Index</option>
+        </select>
+        <select id="an-count" class="select-box">
+          <option value="100">Last 100 ticks</option>
+          <option value="500">Last 500 ticks</option>
+          <option value="1000" selected>Last 1,000 ticks</option>
+        </select>
+        <span id="an-status" style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--mono);">Connecting...</span>
+      </div>
+
+      <!-- Digit bars -->
+      <div class="section-title-row" style="margin-top: 18px;">
+        <h3>Digit Frequency</h3>
+        <span class="signal-count-badge">Expected: 10% each</span>
+      </div>
+      <div class="digit-bars" id="digit-bars"></div>
+
+      <!-- Stat cards -->
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STAT 1</span>
+            <span class="sig-tag fall">EVEN / ODD</span>
+          </div>
+          <h4>Even vs Odd</h4>
+          <div class="confidence-row">
+            <span>Even <span id="st-even" class="conf-val">--%</span></span>
+            <span>Odd <span id="st-odd" class="conf-val">--%</span></span>
+          </div>
+          <div class="progress-bar-container"><div id="st-even-bar" class="progress-fill fall" style="width: 0%;"></div></div>
+        </div>
+
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STAT 2</span>
+            <span class="sig-tag odd">OVER / UNDER</span>
+          </div>
+          <h4>Over 4 vs Under 5</h4>
+          <div class="confidence-row">
+            <span>Over 4 (5-9) <span id="st-over" class="conf-val">--%</span></span>
+            <span>Under 5 (0-4) <span id="st-under" class="conf-val">--%</span></span>
+          </div>
+          <div class="progress-bar-container"><div id="st-over-bar" class="progress-fill odd" style="width: 0%;"></div></div>
+        </div>
+
+        <div class="signal-card">
+          <div class="signal-card-header">
+            <span class="sig-num">STAT 3</span>
+            <span class="sig-tag fall">RECENT</span>
+          </div>
+          <h4>Last 30 Digits</h4>
+          <div class="chip-strip" id="chip-strip"></div>
+        </div>
+      </div>
+
+      <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Each digit should show up about 10% of the time, and differences you see here are normal random variation. Volatility indices are random, so a digit that has been "hot" or "cold" is no more or less likely to come next. Risk warning: you can lose your whole stake. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    // ---------- Analysis ----------
+    const APP_ID = 1089;
+    let socket;
+    let symbol = document.getElementById("an-market").value;
+    let pip = 2;
+    let digits = [];
+
+    function maxTicks() { return parseInt(document.getElementById("an-count").value, 10); }
+    function digitOf(price) { return parseInt(Number(price).toFixed(pip).slice(-1), 10); }
+    function pct(n, total) { return total ? ((n / total) * 100).toFixed(1) + "%" : "--%"; }
+
+    // Build the 10 bars once
+    const barsEl = document.getElementById("digit-bars");
+    for (let d = 0; d <= 9; d++) {
+      barsEl.innerHTML +=
+        '<div class="dbar">' +
+          '<div class="dbar-area"><div class="dbar-fill" id="bar-' + d + '" style="height: 0%;"></div></div>' +
+          '<span id="bar-pct-' + d + '">0.0%</span>' +
+          '<b>' + d + '</b>' +
+        '</div>';
+    }
+
+    function render() {
+      const n = digits.length;
+      if (!n) return;
+
+      const counts = Array(10).fill(0);
+      digits.forEach(d => counts[d]++);
+      const maxC = Math.max(...counts);
+      const minC = Math.min(...counts);
+
+      for (let d = 0; d <= 9; d++) {
+        const bar = document.getElementById("bar-" + d);
+        bar.style.height = (maxC ? (counts[d] / maxC) * 100 : 0) + "%";
+        bar.classList.toggle("hot", counts[d] === maxC);
+        bar.classList.toggle("cold", counts[d] === minC && minC !== maxC);
+        document.getElementById("bar-pct-" + d).textContent = pct(counts[d], n);
+      }
+
+      const even = counts.filter((c, d) => d % 2 === 0).reduce((a, b) => a + b, 0);
+      const over = counts.filter((c, d) => d >= 5).reduce((a, b) => a + b, 0);
+      document.getElementById("st-even").textContent = pct(even, n);
+      document.getElementById("st-odd").textContent = pct(n - even, n);
+      document.getElementById("st-even-bar").style.width = (even / n) * 100 + "%";
+      document.getElementById("st-over").textContent = pct(over, n);
+      document.getElementById("st-under").textContent = pct(n - over, n);
+      document.getElementById("st-over-bar").style.width = (over / n) * 100 + "%";
+
+      const last30 = digits.slice(-30);
+      document.getElementById("chip-strip").innerHTML = last30
+        .map(d => '<span class="chip ' + (d % 2 === 0 ? "even" : "odd") + '">' + d + "</span>")
+        .join("");
+
+      document.getElementById("an-status").textContent = "Analysing " + n + " ticks";
+    }
+
+    function reset() {
+      digits = [];
+      document.getElementById("an-quote").textContent = "---.--";
+      document.getElementById("an-status").textContent = "Loading ticks...";
+      for (let d = 0; d <= 9; d++) {
+        document.getElementById("bar-" + d).style.height = "0%";
+        document.getElementById("bar-pct-" + d).textContent = "0.0%";
+      }
+      ["st-even", "st-odd", "st-over", "st-under"].forEach(id => document.getElementById(id).textContent = "--%");
+      document.getElementById("st-even-bar").style.width = "0%";
+      document.getElementById("st-over-bar").style.width = "0%";
+      document.getElementById("chip-strip").innerHTML = "";
+    }
+
+    function subscribe() {
+      socket.send(JSON.stringify({ forget_all: "ticks" }));
+      socket.send(JSON.stringify({
+        ticks_history: symbol,
+        count: maxTicks(),
+        end: "latest",
+        style: "ticks",
+        subscribe: 1
+      }));
+    }
+
+    function connect() {
+      socket = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + APP_ID);
+
+      socket.onopen = () => { reset(); subscribe(); };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          document.getElementById("an-status").textContent = "Error: " + data.error.message;
+          return;
+        }
+
+        if (data.msg_type === "history" && data.echo_req.ticks_history === symbol) {
+          pip = data.pip_size || 2;
+          digits = data.history.prices.map(digitOf);
+          const prices = data.history.prices;
+          document.getElementById("an-quote").textContent = Number(prices[prices.length - 1]).toFixed(pip);
+          render();
+        }
+
+        if (data.msg_type === "tick" && data.tick.symbol === symbol) {
+          pip = data.tick.pip_size || pip;
+          digits.push(digitOf(data.tick.quote));
+          while (digits.length > maxTicks()) digits.shift();
+          document.getElementById("an-quote").textContent = Number(data.tick.quote).toFixed(pip);
+          render();
+        }
+      };
+
+      socket.onclose = () => {
+        document.getElementById("an-status").textContent = "Connection lost. Reconnecting...";
+        setTimeout(connect, 3000);
+      };
+    }
+
+    function restart() {
+      reset();
+      if (socket && socket.readyState === WebSocket.OPEN) subscribe();
+    }
+
+    document.getElementById("an-market").addEventListener("change", (e) => { symbol = e.target.value; restart(); });
+    document.getElementById("an-count").addEventListener("change", restart);
+
+    connect();
+  </script>
+</body>
+</html>

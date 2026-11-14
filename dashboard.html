@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Trading Dashboard & Workspace</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="dash-body">
+
+  <!-- Top Header Ribbon -->
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+
+    <!-- Feature Tabs Navigation (Responsive Drawer) -->
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab active" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+
+    <div class="dash-header-right">
+      <button class="btn-withdraw" id="withdraw-btn">Withdraw</button>
+
+      <!-- Clean "Login" Button -->
+      <a id="oauth-login-btn" href="#" class="btn-deriv-login">Login</a>
+
+      <!-- Live Account Pill (Hidden until logged in via OAuth) -->
+      <div id="account-pill" class="account-dropdown-pill" style="display: none;">
+        <span id="acc-currency">USD</span>
+        <span id="acc-balance" class="bal-amount">0.00</span>
+        <span class="dropdown-arrow">▼</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Red Announcement Marquee (content written twice for a seamless loop) -->
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>WELCOME TO DOLLARPRINTER.COM</span>
+        <span>YOUR HUB FOR TRADING KNOWLEDGE</span>
+        <span>DERIV INDICES</span>
+        <span>AUTOMATED BOTS</span>
+        <span>LIVE DIGIT ANALYTICS</span>
+        <span>WELCOME TO DOLLARPRINTER.COM</span>
+        <span>YOUR HUB FOR TRADING KNOWLEDGE</span>
+        <span>DERIV INDICES</span>
+        <span>AUTOMATED BOTS</span>
+        <span>LIVE DIGIT ANALYTICS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Workspace -->
+  <main class="workspace-container">
+
+    <!-- Search & Filter Toolbar -->
+    <div class="filter-toolbar">
+      <div class="filter-dropdown-group">
+        <select class="select-box" id="category-select">
+          <option>All</option>
+          <option>Digits</option>
+          <option>Rise/Fall</option>
+        </select>
+        <div class="search-box-wrapper">
+          <input type="text" placeholder="Search for a bot..." class="search-bot-input" />
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+          </svg>
+        </div>
+      </div>
+
+      <div class="action-pills-group">
+        <button class="action-pill active">Load Bot</button>
+        <button class="action-pill">Premium Bots</button>
+        <button class="action-pill">Free Bots</button>
+        <button class="action-pill">Analysis Tool</button>
+      </div>
+    </div>
+
+    <!-- Live Market Stats Section (filled by the script at the bottom) -->
+    <section class="live-signals-section">
+      <div class="section-title-row">
+        <h3>Live Market Stats</h3>
+        <span class="signal-count-badge" id="stats-badge">Last 100 ticks</span>
+      </div>
+
+      <div class="signals-cards-grid" id="signals-grid">
+        <div class="signal-card">
+          <h4>Loading live stats...</h4>
+          <p style="color: var(--text-muted); font-size: 0.8rem;">Reading the last 100 ticks of 10 markets.</p>
+        </div>
+      </div>
+
+      <p style="margin-top: 12px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Each card shows the biggest lean among Even, Odd, Rise and Fall in the last 100 ticks. Fair odds would be 50%, and leans of 55 to 60% show up by chance all the time, especially when the biggest of 40 numbers is picked. Volatility indices are random, so this does not predict the next tick.
+      </p>
+    </section>
+
+    <!-- Interactive Terminal & Digit Analytics Widget -->
+    <section class="terminal-card-container">
+      <div class="terminal-top-row">
+        <h2>Dashboard: Live Digit Frequency & Execution</h2>
+        <div class="live-quote-box">QUOTE: <span id="live-quote-display">---.--</span></div>
+      </div>
+
+      <!-- Mini 3D trades scene -->
+      <div class="trade-scene" style="height: 170px; max-width: 520px; margin-bottom: 14px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:35px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:55px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:70px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:50px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:80px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:65px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:90px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:60px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:100px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:85px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:110px; --z:5px;"></div>
+          <div class="coin" style="width: 46px; height: 46px; font-size: 1.2rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <!-- 0-9 Digit Grid -->
+      <div class="digit-grid-view" id="digit-grid"></div>
+
+      <!-- Bottom Bot Runner Bar -->
+      <div class="bot-runner-footer-bar">
+        <div class="runner-controls-left">
+          <select id="market-select" class="select-box">
+            <option value="R_100">Volatility 100 Index</option>
+            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+            <option value="R_75">Volatility 75 Index</option>
+            <option value="R_50">Volatility 50 Index</option>
+          </select>
+          <select id="contract-select" class="select-box">
+            <option value="DIGITEVEN">Digit Even</option>
+            <option value="DIGITODD">Digit Odd</option>
+            <option value="DIGITOVER">Digit Over (4)</option>
+            <option value="DIGITUNDER">Digit Under (5)</option>
+          </select>
+          <input type="number" id="stake-input" value="1.00" class="token-input-sm" style="width: 90px;" />
+        </div>
+
+        <div class="runner-controls-right">
+          <button id="run-bot-btn" class="btn-run-bot">▶ Run Bot</button>
+          <span class="execution-speed-tag">Execution: FAST</span>
+        </div>
+      </div>
+
+      <!-- Live Activity Log -->
+      <div id="trade-log" class="terminal-log-box">Workspace initialized. Please click Login to authorize trading.</div>
+    </section>
+
+  </main>
+
+  <!-- Floating AI Assistant Button (opens the Entry Scanner) -->
+  <div class="floating-ai-btn" id="ai-assistant-btn">
+    <div class="ai-glow-circle">AI</div>
+  </div>
+
+  <script src="ai-assistant.js"></script>
+  <script src="app.js"></script>
+
+  <!-- Live Market Stats (separate from app.js, uses its own connection) -->
+  <script>
+    (function () {
+      var STATS_APP_ID = 1089;
+      var KEEP = 100;
+      var SHOW = 4;
+
+      var LIST = [
+        { symbol: "R_10",    label: "Volatility 10 Index" },
+        { symbol: "R_25",    label: "Volatility 25 Index" },
+        { symbol: "R_50",    label: "Volatility 50 Index" },
+        { symbol: "R_75",    label: "Volatility 75 Index" },
+        { symbol: "R_100",   label: "Volatility 100 Index" },
+        { symbol: "1HZ10V",  label: "Volatility 10 (1s) Index" },
+        { symbol: "1HZ25V",  label: "Volatility 25 (1s) Index" },
+        { symbol: "1HZ50V",  label: "Volatility 50 (1s) Index" },
+        { symbol: "1HZ75V",  label: "Volatility 75 (1s) Index" },
+        { symbol: "1HZ100V", label: "Volatility 100 (1s) Index" }
+      ];
+
+      var data = {};
+      LIST.forEach(function (m) { data[m.symbol] = { label: m.label, prices: [], pip: 2 }; });
+
+      var grid = document.getElementById("signals-grid");
+      var badge = document.getElementById("stats-badge");
+      var sock;
+
+      function lastDigit(price, pip) {
+        return parseInt(Number(price).toFixed(pip).slice(-1), 10);
+      }
+
+      // Returns the biggest lean for one market
+      function bestLean(m) {
+        var n = m.prices.length;
+        if (n < 50) return null;
+
+        var even = 0, up = 0, down = 0;
+        for (var i = 0; i < n; i++) {
+          if (lastDigit(m.prices[i], m.pip) % 2 === 0) even++;
+          if (i > 0) {
+            if (m.prices[i] > m.prices[i - 1]) up++;
+            else if (m.prices[i] < m.prices[i - 1]) down++;
+          }
+        }
+        var evenPct = (even / n) * 100;
+        var moves = up + down;
+        var upPct = moves ? (up / moves) * 100 : 50;
+
+        var options = [
+          { name: "Even", pct: evenPct,        tone: "fall", arrow: "" },
+          { name: "Odd",  pct: 100 - evenPct,  tone: "odd",  arrow: "" },
+          { name: "Rise", pct: upPct,          tone: "fall", arrow: "▲ " },
+          { name: "Fall", pct: 100 - upPct,    tone: "odd",  arrow: "▼ " }
+        ];
+        var best = options[0];
+        options.forEach(function (o) { if (o.pct > best.pct) best = o; });
+        return { label: m.label, name: best.name, pct: best.pct, tone: best.tone, arrow: best.arrow };
+      }
+
+      function render() {
+        var rows = [];
+        LIST.forEach(function (info) {
+          var r = bestLean(data[info.symbol]);
+          if (r) rows.push(r);
+        });
+        if (!rows.length) return;
+
+        rows.sort(function (a, b) { return b.pct - a.pct; });
+        var top = rows.slice(0, SHOW);
+
+        grid.innerHTML = top.map(function (r, i) {
+          return '<div class="signal-card">' +
+            '<div class="signal-card-header">' +
+              '<span class="sig-num">#' + (i + 1) + '</span>' +
+              '<span class="sig-tag ' + r.tone + '">' + r.arrow + r.name + '</span>' +
+            '</div>' +
+            '<h4>' + r.label + '</h4>' +
+            '<div class="confidence-row">' +
+              '<span>Share of last ' + KEEP + ' ticks</span>' +
+              '<span class="conf-val">' + r.pct.toFixed(1) + '%</span>' +
+            '</div>' +
+            '<div class="progress-bar-container">' +
+              '<div class="progress-fill ' + r.tone + '" style="width: ' + r.pct.toFixed(1) + '%;"></div>' +
+            '</div>' +
+          '</div>';
+        }).join("");
+
+        badge.textContent = "Last " + KEEP + " ticks";
+      }
+
+      function connect() {
+        sock = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + STATS_APP_ID);
+
+        sock.onopen = function () {
+          LIST.forEach(function (info) {
+            sock.send(JSON.stringify({
+              ticks_history: info.symbol,
+              count: KEEP,
+              end: "latest",
+              style: "ticks",
+              subscribe: 1
+            }));
+          });
+        };
+
+        sock.onmessage = function (event) {
+          var msg = JSON.parse(event.data);
+          if (msg.error) return;
+
+          if (msg.msg_type === "history") {
+            var h = data[msg.echo_req.ticks_history];
+            if (!h) return;
+            h.pip = msg.pip_size || 2;
+            h.prices = msg.history.prices.map(Number);
+            render();
+          }
+
+          if (msg.msg_type === "tick") {
+            var t = data[msg.tick.symbol];
+            if (!t) return;
+            t.pip = msg.tick.pip_size || t.pip;
+            t.prices.push(Number(msg.tick.quote));
+            if (t.prices.length > KEEP) t.prices.shift();
+            render();
+          }
+        };
+
+        sock.onclose = function () {
+          badge.textContent = "Reconnecting...";
+          setTimeout(connect, 3000);
+        };
+      }
+
+      connect();
+    })();
+  </script>
+</body>
+</html>

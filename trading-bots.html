@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Trading Bots</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .field-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .settings-grid .select-box, .settings-grid .token-input-sm { width: 100%; }
+    .toggle-row { display: flex; align-items: center; gap: 10px; height: 40px; }
+    .toggle-row input { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
+    .stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 800; }
+
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill-state { font-size: 0.72rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-muted); }
+    .pill-state.on { color: var(--green); border-color: rgba(47, 211, 107, 0.5); background: rgba(47, 211, 107, 0.1); }
+    .pill-state.warn { color: var(--gold); border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.1); }
+    .pill-state.bad { color: var(--red); border-color: rgba(255, 59, 48, 0.5); background: rgba(255, 59, 48, 0.1); }
+
+    .bot-card { cursor: pointer; }
+    .bot-card.selected { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 14px 30px rgba(59, 130, 246, 0.25); }
+    .bot-card p { color: var(--text-muted); font-size: 0.82rem; margin-top: 6px; line-height: 1.5; }
+    .bot-card p.chance { color: var(--cyan); font-family: var(--mono); font-weight: 700; }
+
+    .banner {
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .banner.real { background: rgba(255, 59, 48, 0.08); border-color: rgba(255, 59, 48, 0.4); justify-content: flex-start; }
+    .banner.real input { width: 20px; height: 20px; accent-color: var(--red); }
+
+    .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 18px; min-height: 30px; }
+    .chip {
+      width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-family: var(--mono); font-weight: 700; font-size: 0.82rem;
+      border: 1px solid var(--border); background: var(--bg-element);
+    }
+    .chip.last { border-color: var(--cyan); color: var(--cyan); }
+    .btn-stop { background: linear-gradient(135deg, var(--red), var(--red-deep)) !important; color: #fff !important; }
+    .btn-run-bot:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab active" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>TRADING BOTS</span>
+        <span>RUN A BOT ON YOUR DERIV ACCOUNT</span>
+        <span>LOSS LIMITS BUILT IN</span>
+        <span>START WITH A DEMO ACCOUNT</span>
+        <span>TRADING BOTS</span>
+        <span>RUN A BOT ON YOUR DERIV ACCOUNT</span>
+        <span>LOSS LIMITS BUILT IN</span>
+        <span>START WITH A DEMO ACCOUNT</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 150px; max-width: 480px; margin-bottom: 10px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:30px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:48px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:62px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:44px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:72px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:58px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:80px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:54px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:90px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:76px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:98px; --z:5px;"></div>
+          <div class="coin" style="width: 42px; height: 42px; font-size: 1.1rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <div>
+          <h2>Trading Bots</h2>
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Pick a bot, set your limits, and it trades 1-tick digit contracts on your Deriv account.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill-state" id="pill-conn">Connecting...</span>
+          <span class="pill-state" id="pill-acct">Not logged in</span>
+        </div>
+      </div>
+
+      <!-- Login banner (hidden once logged in) -->
+      <div class="banner" id="tb-login">
+        <span>You are not logged in, so the Run button is locked. Prices and digits still update. Log in with Deriv (a demo account is best to start), and you will come back to the Dashboard. Then open this page again.</span>
+        <a id="tb-login-link" href="#" class="btn-deriv-login">Log in with Deriv</a>
+      </div>
+
+      <!-- Real money confirmation (shown only for real accounts) -->
+      <div class="banner real" id="tb-real" style="display: none;">
+        <input type="checkbox" id="tb-confirm-real" />
+        <label for="tb-confirm-real">I understand this bot trades with REAL money on my account and I can lose it.</label>
+      </div>
+
+      <!-- 1. Choose a bot -->
+      <div class="section-title-row">
+        <h3>1. Choose a bot</h3>
+        <span class="signal-count-badge" id="tb-selected">--</span>
+      </div>
+      <div class="signals-cards-grid" id="tb-bots" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 26px;"></div>
+
+      <!-- 2. Settings -->
+      <div class="section-title-row">
+        <h3>2. Set your limits</h3>
+      </div>
+      <div class="settings-grid">
+        <div>
+          <label class="field-label" for="tb-market">Market</label>
+          <select id="tb-market" class="select-box">
+            <option value="R_100">Volatility 100 Index</option>
+            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+            <option value="R_75">Volatility 75 Index</option>
+            <option value="R_50">Volatility 50 Index</option>
+            <option value="R_25">Volatility 25 Index</option>
+            <option value="R_10">Volatility 10 Index</option>
+            <option value="1HZ10V">Volatility 10 (1s) Index</option>
+            <option value="1HZ25V">Volatility 25 (1s) Index</option>
+            <option value="1HZ50V">Volatility 50 (1s) Index</option>
+            <option value="1HZ75V">Volatility 75 (1s) Index</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="tb-stake">Stake</label>
+          <input type="number" id="tb-stake" value="0.5" min="0.35" step="0.05" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="tb-tp">Take profit</label>
+          <input type="number" id="tb-tp" value="5" min="0.1" step="0.5" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="tb-sl">Stop loss</label>
+          <input type="number" id="tb-sl" value="10" min="0.1" step="0.5" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="tb-max">Max trades</label>
+          <input type="number" id="tb-max" value="20" min="1" step="1" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="tb-mart">Martingale</label>
+          <div class="toggle-row"><input type="checkbox" id="tb-mart" /><span style="font-size: 0.8rem; color: var(--text-muted);">Multiply stake after a loss</span></div>
+        </div>
+        <div>
+          <label class="field-label" for="tb-mult">Multiplier</label>
+          <input type="number" id="tb-mult" value="2" min="1.1" step="0.1" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="tb-steps">Martingale steps</label>
+          <input type="number" id="tb-steps" value="3" min="1" step="1" class="token-input-sm" />
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 14px;">
+        <button class="btn-run-bot" id="tb-run" disabled>▶ Run Bot</button>
+        <button class="action-pill" id="tb-disconnect" style="display: none;">Disconnect</button>
+        <div class="live-quote-box">QUOTE: <span id="tb-quote">---.--</span></div>
+      </div>
+
+      <!-- Last digits -->
+      <div class="chip-row" id="tb-digits"></div>
+
+      <!-- Scoreboard -->
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 20px;">
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">P/L</span><span class="sig-tag fall">SESSION</span></div>
+          <h4>Session P/L</h4>
+          <p class="stat-value" id="tb-pl">0.00</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">COUNT</span><span class="sig-tag fall">TRADES</span></div>
+          <h4>Trades Done</h4>
+          <p class="stat-value" id="tb-trades">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">W / L</span><span class="sig-tag odd">RESULTS</span></div>
+          <h4>Wins / Losses</h4>
+          <p class="stat-value" id="tb-wl">0 / 0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">NEXT</span><span class="sig-tag odd">STAKE</span></div>
+          <h4>Current Stake</h4>
+          <p class="stat-value" id="tb-stake-now">0.00</p>
+          <p style="color: var(--text-muted); font-size: 0.78rem;" id="tb-step">Martingale step 0</p>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div id="tb-log" class="terminal-log-box" style="height: 160px;">Pick a bot and press Run Bot after logging in.</div>
+
+      <!-- CHANGED: the caps are now filled in by the script, so the text no longer shows "${10}" -->
+      <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        Bots place real trades on your Deriv account. Each tick on a volatility index is random, so no pattern or setting gives a bot an edge, and Deriv pays less than fair odds, so winning often does not mean profit. Martingale makes small wins common and rare losses large. The bot stops at your take profit, stop loss or trade limit, and it will not accept a stake above <span id="cap-stake">10</span> or a stop loss above <span id="cap-loss">50</span>. Risk warning: you can lose your whole stake. Test on a demo account first, and only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <!-- CHANGED: ai-assistant.js added -->
+  <script src="bot-engine.js"></script>
+  <script src="ai-assistant.js"></script>
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    const $ = id => document.getElementById(id);
+
+    // Show the real caps in the disclaimer
+    $("cap-stake").textContent = DPBot.LIMITS.maxStake;
+    $("cap-loss").textContent = DPBot.LIMITS.maxLoss;
+
+    // ---------- The bots ----------
+    const BOTS = [
+      {
+        id: "over1", name: "Over 1 Pattern", tag: "DIGITS", tone: "fall",
+        contract: { type: "DIGITOVER", barrier: 1 },
+        entry: { kind: "streak", test: "le", value: 1, length: 3 },
+        note: "Wins often but pays little, so one loss can wipe out several wins."
+      },
+      {
+        id: "under8", name: "Under 8 Pattern", tag: "DIGITS", tone: "odd",
+        contract: { type: "DIGITUNDER", barrier: 8 },
+        entry: { kind: "streak", test: "ge", value: 8, length: 3 },
+        note: "Wins often but pays little, so one loss can wipe out several wins."
+      },
+      {
+        id: "oddafter", name: "Odd After Even Streak", tag: "DIGITS", tone: "fall",
+        contract: { type: "DIGITODD" },
+        entry: { kind: "streak", test: "even", value: 0, length: 4 },
+        note: "Bets that a run of even digits ends. Each digit is independent, so this does not improve the odds."
+      },
+      {
+        id: "over3", name: "Over 3 Steady", tag: "BASELINE", tone: "odd",
+        contract: { type: "DIGITOVER", barrier: 3 },
+        entry: { kind: "always" },
+        note: "No pattern at all. Useful for comparing the other bots against."
+      }
+    ];
+    let current = BOTS[0];
+    let scannerMarket = null;
+
+    // CHANGED: a bot chosen in the Entry Scanner shows up as the first card
+    (function loadScannerPick() {
+      let raw = null;
+      try {
+        raw = sessionStorage.getItem("dp_scanner_pick");
+        sessionStorage.removeItem("dp_scanner_pick");
+      } catch (e) { /* ignore */ }
+      if (!raw) return;
+
+      try {
+        const p = JSON.parse(raw);
+        const isOver = p.side === "over";
+        const barrierOk = isOver ? (p.barrier >= 0 && p.barrier <= 8) : (p.barrier >= 1 && p.barrier <= 9);
+        const lengthOk = p.length >= 1 && p.length <= 10;
+        const option = document.querySelector('#tb-market option[value="' + p.symbol + '"]');
+        if (!barrierOk || !lengthOk || !option) return;
+
+        const bot = {
+          id: "scanner",
+          name: "Scanner Pick: " + (isOver ? "Over " : "Under ") + p.barrier,
+          tag: "SCANNER", tone: "fall",
+          contract: { type: isOver ? "DIGITOVER" : "DIGITUNDER", barrier: p.barrier },
+          entry: { kind: "streak", test: isOver ? "le" : "ge", value: p.barrier, length: p.length },
+          note: "Loaded from the Entry Scanner for " + option.textContent + ". A strong past result does not make the next tick more likely to win."
+        };
+        BOTS.unshift(bot);
+        current = bot;
+        scannerMarket = p.symbol;
+      } catch (e) { /* ignore a broken pick */ }
+    })();
+
+    const LOCK_IDS = ["tb-market", "tb-stake", "tb-tp", "tb-sl", "tb-max", "tb-mart", "tb-mult", "tb-steps", "tb-confirm-real"];
+
+    // ---------- Log ----------
+    function logLine(text, color) {
+      const box = $("tb-log");
+      if (!box.dataset.started) { box.textContent = ""; box.dataset.started = "1"; }
+      const line = document.createElement("div");
+      line.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+      if (color) line.style.color = color;
+      box.appendChild(line);
+      while (box.children.length > 120) box.removeChild(box.firstChild);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ---------- Bot cards ----------
+    function renderBots() {
+      $("tb-bots").innerHTML = BOTS.map(function (b, i) {
+        return '<div class="signal-card bot-card' + (b.id === current.id ? " selected" : "") + '" data-id="' + b.id + '">' +
+          '<div class="signal-card-header">' +
+            '<span class="sig-num">BOT 0' + (i + 1) + '</span>' +
+            '<span class="sig-tag ' + b.tone + '">' + b.tag + '</span>' +
+          '</div>' +
+          '<h4>' + b.name + '</h4>' +
+          '<p>' + DPBot.describeContract(b.contract) + '. ' + DPBot.describeEntry(b.entry) + '.</p>' +
+          '<p class="chance">Chance per trade: ' + DPBot.chance(b.contract) + '%</p>' +
+          '<p>' + b.note + '</p>' +
+        '</div>';
+      }).join("");
+
+      document.querySelectorAll(".bot-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+          if (DPBot.snapshot().running) return;
+          current = BOTS.find(function (b) { return b.id === card.dataset.id; }) || current;
+          renderBots();
+        });
+      });
+      $("tb-selected").textContent = current.name;
+    }
+
+    // ---------- Settings ----------
+    function readSettings() {
+      return {
+        stake: parseFloat($("tb-stake").value),
+        tp: parseFloat($("tb-tp").value),
+        sl: parseFloat($("tb-sl").value),
+        maxTrades: parseInt($("tb-max").value, 10),
+        martingale: $("tb-mart").checked,
+        multiplier: parseFloat($("tb-mult").value),
+        maxSteps: parseInt($("tb-steps").value, 10),
+        confirmReal: $("tb-confirm-real").checked
+      };
+    }
+
+    // ---------- Screen updates ----------
+    function onUpdate(s) {
+      const conn = $("pill-conn");
+      conn.textContent = s.connected ? "API Connected" : "Connecting...";
+      conn.className = "pill-state" + (s.connected ? " on" : "");
+
+      const acct = $("pill-acct");
+      if (s.authorized && s.account) {
+        acct.textContent = s.account.loginid + (s.account.isVirtual ? " (Demo) " : " (REAL) ") +
+                           s.account.balance.toFixed(2) + " " + s.account.currency;
+        acct.className = "pill-state " + (s.account.isVirtual ? "on" : "bad");
+      } else {
+        acct.textContent = "Not logged in";
+        acct.className = "pill-state";
+      }
+
+      $("tb-login").style.display = s.authorized ? "none" : "flex";
+      $("tb-real").style.display = (s.authorized && s.account && !s.account.isVirtual) ? "flex" : "none";
+      $("tb-disconnect").style.display = s.authorized ? "inline-block" : "none";
+
+      $("tb-quote").textContent = s.quote || "---.--";
+
+      const last = s.digits.slice(-12);
+      $("tb-digits").innerHTML = last.map(function (d, i) {
+        return '<span class="chip' + (i === last.length - 1 ? " last" : "") + '">' + d + "</span>";
+      }).join("");
+
+      const plEl = $("tb-pl");
+      plEl.textContent = (s.profit >= 0 ? "+" : "-") + Math.abs(s.profit).toFixed(2);
+      plEl.style.color = s.profit > 0 ? "var(--green)" : s.profit < 0 ? "var(--red)" : "var(--text-main)";
+      $("tb-trades").textContent = s.trades;
+      $("tb-wl").textContent = s.wins + " / " + s.losses;
+      $("tb-stake-now").textContent = s.running ? s.stake.toFixed(2) : (parseFloat($("tb-stake").value) || 0).toFixed(2);
+      $("tb-step").textContent = "Martingale step " + s.step;
+
+      const run = $("tb-run");
+      run.textContent = s.running ? "■ Stop Bot" : "▶ Run Bot";
+      run.classList.toggle("btn-stop", s.running);
+      run.disabled = !s.authorized && !s.running;
+
+      LOCK_IDS.forEach(function (id) { $(id).disabled = s.running; });
+      $("tb-market").value = s.symbol;
+    }
+
+    // ---------- Buttons ----------
+    $("tb-run").addEventListener("click", function () {
+      if (DPBot.snapshot().running) {
+        DPBot.stop("Bot stopped by user.", "#f59e0b");
+        renderBots();
+        return;
+      }
+      const result = DPBot.start(current, readSettings());
+      if (!result.ok) logLine(result.error, "#f59e0b");
+    });
+
+    $("tb-disconnect").addEventListener("click", function () {
+      DPBot.logout();
+      logLine("Disconnected. Your login was cleared from this tab.", "#94a3b8");
+    });
+
+    $("tb-market").addEventListener("change", function (e) {
+      if (!DPBot.setMarket(e.target.value)) {
+        e.target.value = DPBot.snapshot().symbol;
+      }
+    });
+
+    $("tb-stake").addEventListener("input", function () { onUpdate(DPBot.snapshot()); });
+
+    $("tb-login-link").href = DPBot.loginUrl();
+
+    // CHANGED: apply the market from the scanner before connecting
+    if (scannerMarket) {
+      DPBot.setMarket(scannerMarket);
+      logLine("Loaded " + current.name + " from the Entry Scanner. Set your limits, then press Run Bot. Nothing trades until you do.", "#8b5cf6");
+    }
+
+    renderBots();
+    DPBot.init({ log: logLine, update: onUpdate });
+  </script>
+</body>
+</html>

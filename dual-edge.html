@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dollarprinter — Dual Edge Simulator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    .field-label { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .settings-grid .select-box, .settings-grid .token-input-sm { width: 100%; }
+    .toggle-row { display: flex; align-items: center; gap: 10px; height: 40px; }
+    .toggle-row input { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
+    .stat-value { font-family: var(--mono); font-size: 1.6rem; font-weight: 800; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill-state { font-size: 0.72rem; font-weight: 800; padding: 4px 12px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-muted); }
+    .pill-state.on { color: var(--green); border-color: rgba(47, 211, 107, 0.5); background: rgba(47, 211, 107, 0.1); }
+    .pill-state.run { color: var(--gold); border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.1); }
+    .risk-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.8rem; }
+    .risk-table th { text-align: left; color: var(--text-muted); font-size: 0.7rem; letter-spacing: 1px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    .risk-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+    .risk-table td.bad { color: var(--red); font-weight: 700; }
+    .table-scroll { overflow-x: auto; }
+    .btn-stop { background: linear-gradient(135deg, var(--red), var(--red-deep)) !important; color: #fff !important; }
+  </style>
+</head>
+<body class="dash-body">
+
+  <header class="dash-top-header">
+    <div class="dash-header-left">
+      <button class="menu-btn" id="menu-toggle-btn">☰</button>
+      <div class="brand-logo-text" onclick="window.location.href='dashboard.html'">
+        <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+      </div>
+    </div>
+    <nav class="dash-nav-tabs" id="nav-tabs-container">
+      <button class="nav-tab" onclick="window.location.href='dashboard.html'">Dashboard</button>
+      <button class="nav-tab" onclick="window.location.href='bot-builder.html'">Bot Builder</button>
+      <button class="nav-tab" onclick="window.location.href='trading-bots.html'">Trading Bots</button>
+      <button class="nav-tab" onclick="window.location.href='bulk-trader.html'">Bulk Trader</button>
+      <button class="nav-tab" onclick="window.location.href='pro-ai.html'">Pro AI</button>
+      <button class="nav-tab active" onclick="window.location.href='dual-edge.html'">Dual Edge</button>
+      <button class="nav-tab" onclick="window.location.href='analysis-tool.html'">Analysis Tool</button>
+      <button class="nav-tab" onclick="window.location.href='copy-trading.html'">Copy Trading</button>
+      <button class="nav-tab" onclick="window.location.href='charts.html'">Charts</button>
+    </nav>
+    <div class="dash-header-right">
+      <button class="btn-withdraw" onclick="window.location.href='https://app.deriv.com/cashier'">Withdraw</button>
+    </div>
+  </header>
+
+  <div class="red-announcement-ticker">
+    <div class="marquee">
+      <div class="marquee-track">
+        <span>DUAL EDGE SIMULATOR</span>
+        <span>PAPER TRADING WITH VIRTUAL MONEY</span>
+        <span>TEST TP, SL AND MARTINGALE SAFELY</span>
+        <span>NO REAL TRADES ARE PLACED</span>
+        <span>DUAL EDGE SIMULATOR</span>
+        <span>PAPER TRADING WITH VIRTUAL MONEY</span>
+        <span>TEST TP, SL AND MARTINGALE SAFELY</span>
+        <span>NO REAL TRADES ARE PLACED</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="workspace-container">
+    <section class="terminal-card-container">
+
+      <div class="trade-scene" style="height: 150px; max-width: 480px; margin-bottom: 10px;" aria-hidden="true">
+        <div class="trade-stage">
+          <div class="trade-floor"></div>
+          <div class="candle"     style="--i:0; --h:30px; --z:0px;"></div>
+          <div class="candle red" style="--i:1; --h:48px; --z:20px;"></div>
+          <div class="candle"     style="--i:2; --h:62px; --z:-15px;"></div>
+          <div class="candle"     style="--i:3; --h:44px; --z:25px;"></div>
+          <div class="candle red" style="--i:4; --h:72px; --z:0px;"></div>
+          <div class="candle"     style="--i:5; --h:58px; --z:-20px;"></div>
+          <div class="candle"     style="--i:6; --h:80px; --z:15px;"></div>
+          <div class="candle red" style="--i:7; --h:54px; --z:-5px;"></div>
+          <div class="candle"     style="--i:8; --h:90px; --z:20px;"></div>
+          <div class="candle"     style="--i:9; --h:76px; --z:-15px;"></div>
+          <div class="candle"     style="--i:10; --h:98px; --z:5px;"></div>
+          <div class="coin" style="width: 42px; height: 42px; font-size: 1.1rem; border-width: 3px;">$</div>
+        </div>
+      </div>
+
+      <div class="terminal-top-row">
+        <div>
+          <h2>Dual Edge Simulator</h2>
+          <p id="de-subtitle" style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px;">Virtual money only. 1-tick contracts on live ticks.</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill-state" id="pill-run">Stopped</span>
+          <span class="pill-state" id="pill-api">API Connecting</span>
+          <span class="pill-state" id="pill-mkt">Markets Waiting</span>
+        </div>
+      </div>
+
+      <!-- Scoreboard -->
+      <div class="signals-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 22px;">
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">WON</span><span class="sig-tag fall">TRADES</span></div>
+          <h4>Won Trades</h4>
+          <p class="stat-value" id="s-won" style="color: var(--green);">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">LOST</span><span class="sig-tag odd">TRADES</span></div>
+          <h4>Lost Trades</h4>
+          <p class="stat-value" id="s-lost" style="color: var(--red);">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">P/L</span><span class="sig-tag fall">SESSION</span></div>
+          <h4>Session P/L</h4>
+          <p class="stat-value" id="s-pl">0.00</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">NEXT</span><span class="sig-tag odd">STAKE</span></div>
+          <h4>Current Stake</h4>
+          <p class="stat-value" id="s-stake">0.50</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">BAL</span><span class="sig-tag fall">VIRTUAL</span></div>
+          <h4>Balance</h4>
+          <p class="stat-value" id="s-bal">1000.00</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">COUNT</span><span class="sig-tag fall">TRADES</span></div>
+          <h4>Trades Done</h4>
+          <p class="stat-value" id="s-trades">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">STREAK</span><span class="sig-tag odd">LOSSES</span></div>
+          <h4>Longest Losing Streak</h4>
+          <p class="stat-value" id="s-streak">0</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card-header"><span class="sig-num">MAX</span><span class="sig-tag odd">STAKE</span></div>
+          <h4>Largest Stake Used</h4>
+          <p class="stat-value" id="s-maxstake">0.00</p>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="settings-grid">
+        <div>
+          <label class="field-label" for="de-market">Market</label>
+          <select id="de-market" class="select-box">
+            <option value="R_100">Volatility 100 Index</option>
+            <option value="1HZ100V">Volatility 100 (1s) Index</option>
+            <option value="R_75">Volatility 75 Index</option>
+            <option value="R_50">Volatility 50 Index</option>
+            <option value="R_25">Volatility 25 Index</option>
+            <option value="R_10">Volatility 10 Index</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="de-type">Trade type</label>
+          <select id="de-type" class="select-box">
+            <option value="over1">Digit Over 1 (80% chance)</option>
+            <option value="under8">Digit Under 8 (80% chance)</option>
+            <option value="over3">Digit Over 3 (60% chance)</option>
+            <option value="under6">Digit Under 6 (60% chance)</option>
+            <option value="even">Digit Even (50% chance)</option>
+            <option value="odd">Digit Odd (50% chance)</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label" for="de-stake">Stake</label>
+          <input type="number" id="de-stake" value="0.5" min="0.35" step="0.05" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="de-tp">TP (take profit)</label>
+          <input type="number" id="de-tp" value="5" min="0.1" step="0.5" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="de-sl">SL (stop loss)</label>
+          <input type="number" id="de-sl" value="30" min="0.1" step="0.5" class="token-input-sm" />
+        </div>
+        <div>
+          <label class="field-label" for="de-mart-on">Enable martingale</label>
+          <div class="toggle-row"><input type="checkbox" id="de-mart-on" /><span style="font-size: 0.8rem; color: var(--text-muted);">Multiply stake after a loss</span></div>
+        </div>
+        <div>
+          <label class="field-label" for="de-mult">Martingale multiplier</label>
+          <input type="number" id="de-mult" value="2" min="1.1" step="0.1" class="token-input-sm" />
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px;">
+        <button class="btn-run-bot" id="de-start">▶ Start Simulation</button>
+        <button class="action-pill" id="de-reset">Reset</button>
+        <div class="live-quote-box">TICK: <span id="de-quote">---.--</span></div>
+      </div>
+
+      <!-- Martingale reality table -->
+      <div class="section-title-row">
+        <h3>Martingale Reality Check</h3>
+        <span class="signal-count-badge" style="color: var(--red); background: rgba(255, 59, 48, 0.1); border-color: rgba(255, 59, 48, 0.3);">Uses your settings</span>
+      </div>
+      <div class="table-scroll" style="margin-bottom: 22px;">
+        <table class="risk-table">
+          <thead>
+            <tr><th>LOSSES IN A ROW</th><th>NEXT STAKE</th><th>TOTAL LOST</th><th>CHANCE OF STREAK</th><th>VS YOUR LIMITS</th></tr>
+          </thead>
+          <tbody id="risk-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Log -->
+      <div id="de-log" class="terminal-log-box" style="height: 150px;">Press Start Simulation to begin.</div>
+
+      <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
+        This is a simulation with virtual money. It assumes a 5% broker margin on every payout, and real payouts differ. Volatility indices are random, so no setting of stake, take profit or martingale gives you an edge. Martingale makes small wins common and rare losses very large. Risk warning: you can lose your whole stake. Only trade with money you can afford to lose.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------- Mobile hamburger menu toggle ----------
+    const menuToggle = document.getElementById("menu-toggle-btn");
+    const navTabs = document.getElementById("nav-tabs-container");
+    if (menuToggle && navTabs) {
+      menuToggle.addEventListener("click", () => navTabs.classList.toggle("mobile-open"));
+    }
+
+    // ---------- Settings ----------
+    const APP_ID = 1089;
+    const START_BALANCE = 1000;
+    const MARGIN = 0.95; // assumed payout margin: profit = stake * (0.95 / chance - 1)
+
+    const TYPES = {
+      over1:  { label: "Over 1",  chance: 0.8, win: d => d > 1 },
+      under8: { label: "Under 8", chance: 0.8, win: d => d < 8 },
+      over3:  { label: "Over 3",  chance: 0.6, win: d => d > 3 },
+      under6: { label: "Under 6", chance: 0.6, win: d => d < 6 },
+      even:   { label: "Even",    chance: 0.5, win: d => d % 2 === 0 },
+      odd:    { label: "Odd",     chance: 0.5, win: d => d % 2 === 1 }
+    };
+
+    const $ = id => document.getElementById(id);
+    const CONTROL_IDS = ["de-market", "de-type", "de-stake", "de-tp", "de-sl", "de-mart-on", "de-mult"];
+
+    // ---------- State ----------
+    let socket;
+    let symbol = $("de-market").value;
+    let running = false;
+    let pending = false;
+    let tradeStake = 0;
+    let baseStake = 0.5;
+    let stake = 0.5;
+    let balance = START_BALANCE;
+    let won = 0, lost = 0, pl = 0, trades = 0;
+    let lossStreak = 0, maxLossStreak = 0, maxStakeUsed = 0;
+
+    function round2(n) { return Math.round(n * 100) / 100; }
+    function money(n) { return (n >= 0 ? "+" : "-") + Math.abs(n).toFixed(2); }
+    function val(id) { return parseFloat($(id).value); }
+
+    function profitFactor(chance) { return MARGIN / chance - 1; }
+
+    // ---------- Log ----------
+    function logLine(text, color) {
+      const box = $("de-log");
+      if (!box.dataset.started) { box.textContent = ""; box.dataset.started = "1"; }
+      const line = document.createElement("div");
+      line.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+      if (color) line.style.color = color;
+      box.appendChild(line);
+      while (box.children.length > 120) box.removeChild(box.firstChild);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ---------- Rendering ----------
+    function render() {
+      $("s-won").textContent = won;
+      $("s-lost").textContent = lost;
+      const plEl = $("s-pl");
+      plEl.textContent = money(pl);
+      plEl.style.color = pl > 0 ? "var(--green)" : pl < 0 ? "var(--red)" : "var(--text-main)";
+      $("s-stake").textContent = stake.toFixed(2);
+      $("s-bal").textContent = balance.toFixed(2);
+      $("s-trades").textContent = trades;
+      $("s-streak").textContent = maxLossStreak;
+      $("s-maxstake").textContent = maxStakeUsed.toFixed(2);
+
+      const pill = $("pill-run");
+      pill.textContent = running ? "Running" : "Stopped";
+      pill.className = "pill-state" + (running ? " run" : "");
+
+      const btn = $("de-start");
+      btn.textContent = running ? "■ Stop Simulation" : "▶ Start Simulation";
+      btn.classList.toggle("btn-stop", running);
+      $("de-reset").disabled = running;
+      CONTROL_IDS.forEach(id => { $(id).disabled = running; });
+
+      const type = TYPES[$("de-type").value];
+      $("de-subtitle").textContent =
+        "Virtual money only. " + type.label + " on live ticks, " + (type.chance * 100) + "% chance per trade.";
+    }
+
+    function renderRisk() {
+      const base = val("de-stake");
+      const mult = val("de-mult");
+      const type = TYPES[$("de-type").value];
+      const sl = val("de-sl");
+      const martOn = $("de-mart-on").checked;
+      const body = $("risk-body");
+
+      if (!(base > 0) || !(mult >= 1)) { body.innerHTML = ""; return; }
+
+      const useMult = martOn ? mult : 1;
+      let html = "";
+      [3, 5, 8, 10].forEach(n => {
+        const nextStake = base * Math.pow(useMult, n);
+        const totalLost = useMult === 1 ? base * n : base * (Math.pow(useMult, n) - 1) / (useMult - 1);
+        const chance = Math.pow(1 - type.chance, n) * 100;
+        let note = "Within limits";
+        let bad = false;
+        if (totalLost >= START_BALANCE) { note = "Wipes out the virtual balance"; bad = true; }
+        else if (totalLost >= sl) { note = "Hits your SL"; bad = true; }
+        html += "<tr><td>" + n + "</td><td>" + nextStake.toFixed(2) + "</td><td>" + totalLost.toFixed(2) + "</td>" +
+                "<td>" + (chance < 0.01 ? "<0.01" : chance.toFixed(2)) + "%</td>" +
+                "<td class='" + (bad ? "bad" : "") + "'>" + note + "</td></tr>";
+      });
+      body.innerHTML = html;
+    }
+
+    // ---------- Simulation ----------
+    function stopSim(reason, color) {
+      running = false;
+      pending = false;
+      if (reason) logLine(reason, color || "#f59e0b");
+      render();
+    }
+
+    function resetSim() {
+      pending = false;
+      balance = START_BALANCE;
+      won = 0; lost = 0; pl = 0; trades = 0;
+      lossStreak = 0; maxLossStreak = 0; maxStakeUsed = 0;
+      baseStake = val("de-stake") > 0 ? val("de-stake") : 0.5;
+      stake = baseStake;
+      $("de-log").textContent = "Press Start Simulation to begin.";
+      delete $("de-log").dataset.started;
+      render();
+    }
+
+    function startSim() {
+      const s = val("de-stake"), tp = val("de-tp"), sl = val("de-sl"), mult = val("de-mult");
+      if (!(s > 0) || !(tp > 0) || !(sl > 0)) {
+        logLine("Enter a stake, TP and SL above 0 first.", "#f59e0b");
+        return;
+      }
+      if ($("de-mart-on").checked && !(mult >= 1.1)) {
+        logLine("The martingale multiplier must be at least 1.1.", "#f59e0b");
+        return;
+      }
+      if (s > balance) {
+        logLine("The stake is larger than the virtual balance. Press Reset or lower the stake.", "#f59e0b");
+        return;
+      }
+      baseStake = round2(s);
+      stake = baseStake;
+      running = true;
+      pending = false;
+      logLine("Simulation started: " + TYPES[$("de-type").value].label + ", stake " + baseStake.toFixed(2) +
+              ", TP " + tp + ", SL " + sl + (($("de-mart-on").checked) ? ", martingale x" + mult : ", no martingale") + ".", "#34c759");
+      render();
+    }
+
+    function resolveTrade(d) {
+      const type = TYPES[$("de-type").value];
+      trades++;
+
+      if (type.win(d)) {
+        const profit = round2(tradeStake * profitFactor(type.chance));
+        pl = round2(pl + profit);
+        balance = round2(balance + profit);
+        won++;
+        lossStreak = 0;
+        stake = baseStake;
+        logLine("WIN +" + profit.toFixed(2) + " (digit " + d + ", stake " + tradeStake.toFixed(2) + ")", "#34c759");
+      } else {
+        pl = round2(pl - tradeStake);
+        balance = round2(balance - tradeStake);
+        lost++;
+        lossStreak++;
+        if (lossStreak > maxLossStreak) maxLossStreak = lossStreak;
+        stake = $("de-mart-on").checked ? round2(tradeStake * val("de-mult")) : baseStake;
+        logLine("LOSS -" + tradeStake.toFixed(2) + " (digit " + d + ", next stake " + stake.toFixed(2) + ")", "#ff3b30");
+      }
+      pending = false;
+
+      // Limits
+      if (pl >= val("de-tp")) { stopSim("Take profit reached (" + money(pl) + "). Simulation stopped.", "#34c759"); return; }
+      if (-pl >= val("de-sl")) { stopSim("Stop loss reached (" + money(pl) + "). Simulation stopped.", "#ff3b30"); return; }
+      if (stake > balance) { stopSim("Next stake (" + stake.toFixed(2) + ") is more than the virtual balance. Simulation stopped.", "#ff3b30"); return; }
+    }
+
+    function placeTrade() {
+      tradeStake = stake;
+      if (tradeStake > maxStakeUsed) maxStakeUsed = tradeStake;
+      pending = true;
+    }
+
+    function onTick(tick) {
+      if (tick.symbol !== symbol) return;
+      const pip = tick.pip_size || 2;
+      const d = parseInt(Number(tick.quote).toFixed(pip).slice(-1), 10);
+
+      $("de-quote").textContent = Number(tick.quote).toFixed(pip);
+      if (!$("pill-mkt").classList.contains("on")) {
+        $("pill-mkt").textContent = "Markets Ready";
+        $("pill-mkt").classList.add("on");
+      }
+
+      if (running && pending) resolveTrade(d);      // this tick is the exit tick
+      if (running && !pending) placeTrade();        // this tick is the entry tick
+      render();
+    }
+
+    // ---------- Connection ----------
+    function subscribe() {
+      socket.send(JSON.stringify({ forget_all: "ticks" }));
+      socket.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+    }
+
+    function connect() {
+      socket = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=" + APP_ID);
+
+      socket.onopen = () => {
+        $("pill-api").textContent = "API Connected";
+        $("pill-api").classList.add("on");
+        subscribe();
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          logLine("API error: " + data.error.message, "#ff3b30");
+          return;
+        }
+        if (data.msg_type === "tick") onTick(data.tick);
+      };
+
+      socket.onclose = () => {
+        $("pill-api").textContent = "API Reconnecting";
+        $("pill-api").classList.remove("on");
+        if (running) stopSim("Connection lost. Simulation stopped.");
+        setTimeout(connect, 3000);
+      };
+    }
+
+    // ---------- Controls ----------
+    $("de-start").addEventListener("click", () => {
+      if (running) stopSim("Simulation stopped by user.");
+      else startSim();
+    });
+    $("de-reset").addEventListener("click", resetSim);
+
+    $("de-market").addEventListener("change", (e) => {
+      symbol = e.target.value;
+      $("de-quote").textContent = "---.--";
+      $("pill-mkt").textContent = "Markets Waiting";
+      $("pill-mkt").classList.remove("on");
+      if (socket && socket.readyState === WebSocket.OPEN) subscribe();
+    });
+
+    ["de-type", "de-stake", "de-sl", "de-mart-on", "de-mult"].forEach(id => {
+      $(id).addEventListener("input", () => { renderRisk(); if (!running) render(); });
+      $(id).addEventListener("change", () => { renderRisk(); if (!running) render(); });
+    });
+    $("de-stake").addEventListener("change", () => {
+      if (!running && val("de-stake") > 0) { baseStake = val("de-stake"); stake = baseStake; render(); }
+    });
+
+    resetSim();
+    renderRisk();
+    connect();
+  </script>
+</body>
+</html>
