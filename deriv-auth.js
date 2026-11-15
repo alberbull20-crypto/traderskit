@@ -1,46 +1,41 @@
 
-/* deriv-auth.js
-   TradersKit — Deriv OAuth 2.0 with PKCE
+/* =========================================================
+   TradersKit — Deriv OAuth 2.0 Authentication
    Canonical domain: https://traderskit.site
-*/
+   Supports demo and real Options accounts.
+   ========================================================= */
 
 (function () {
   "use strict";
 
-  // Your registered Deriv OAuth Client ID
   const CLIENT_ID = "34XJmAXXrWNVS1Ya34OOv";
 
-  // Canonical website settings
   const SITE = "https://traderskit.site";
   const REDIRECT_URI = SITE + "/callback.html";
 
-  // Deriv endpoints
   const AUTH_URL = "https://auth.deriv.com/oauth2/auth";
   const API_BASE = "https://api.derivws.com";
 
-  // Permissions needed for account access and trading
-  const SCOPE = "trade";
+  // Request only the permissions needed at this stage.
+  const SCOPE = "trade payment";
 
-  // Browser-tab storage keys
   const TOKEN_KEY = "dp_access_token";
   const EXPIRY_KEY = "dp_token_expires";
   const VERIFIER_KEY = "dp_pkce_verifier";
   const STATE_KEY = "dp_oauth_state";
   const ACCOUNT_KEY = "dp_selected_account";
 
-  // Generate a cryptographically secure random string
   function randomString(length) {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
 
     const bytes = crypto.getRandomValues(new Uint8Array(length));
 
-    return Array.from(bytes, function (b) {
-      return chars[b % chars.length];
+    return Array.from(bytes, function (byte) {
+      return chars[byte % chars.length];
     }).join("");
   }
 
-  // Generate the SHA-256 PKCE challenge
   async function challengeFor(verifier) {
     const hash = await crypto.subtle.digest(
       "SHA-256",
@@ -55,7 +50,6 @@
       .replace(/=+$/, "");
   }
 
-  // Start Deriv OAuth login
   async function login() {
     if (window.location.origin !== SITE) {
       alert(
@@ -87,15 +81,16 @@
         code_challenge_method: "S256"
       });
 
-      window.location.assign(AUTH_URL + "?" + params.toString());
+      window.location.assign(
+        AUTH_URL + "?" + params.toString()
+      );
 
     } catch (error) {
-      console.error("Deriv login initialization failed:", error);
+      console.error("Deriv login failed:", error);
       alert("Could not start secure login. Please try again.");
     }
   }
 
-  // Save the OAuth access token for this browser tab
   function saveToken(token, expiresIn) {
     if (!token || typeof token !== "string") {
       throw new Error("Invalid access token.");
@@ -104,19 +99,17 @@
     const seconds = Number(expiresIn);
 
     if (!Number.isFinite(seconds) || seconds <= 0) {
-      throw new Error("Deriv returned an invalid token expiry.");
+      throw new Error("Invalid token expiry.");
     }
 
     sessionStorage.setItem(TOKEN_KEY, token);
 
-    // Expire one minute early to avoid using an almost-expired token
     sessionStorage.setItem(
       EXPIRY_KEY,
       String(Date.now() + seconds * 1000 - 60000)
     );
   }
 
-  // Read a valid token
   function getToken() {
     try {
       const token = sessionStorage.getItem(TOKEN_KEY);
@@ -134,19 +127,6 @@
     }
   }
 
-  // Clear login information
-  function logout() {
-    try {
-      sessionStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(EXPIRY_KEY);
-      sessionStorage.removeItem(ACCOUNT_KEY);
-      clearPkce();
-    } catch (error) {
-      // Ignore browser storage errors
-    }
-  }
-
-  // Read PKCE information for callback.html
   function readPkce() {
     try {
       return {
@@ -161,17 +141,22 @@
     }
   }
 
-  // Remove PKCE information after successful exchange
   function clearPkce() {
+    sessionStorage.removeItem(VERIFIER_KEY);
+    sessionStorage.removeItem(STATE_KEY);
+  }
+
+  function logout() {
     try {
-      sessionStorage.removeItem(VERIFIER_KEY);
-      sessionStorage.removeItem(STATE_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(EXPIRY_KEY);
+      sessionStorage.removeItem(ACCOUNT_KEY);
+      clearPkce();
     } catch (error) {
-      // Ignore browser storage errors
+      console.error("Could not clear login information:", error);
     }
   }
 
-  // Retrieve the user's Deriv Options accounts
   async function getAccounts() {
     const token = getToken();
 
@@ -200,10 +185,18 @@
       );
     }
 
-    return Array.isArray(result.data) ? result.data : [];
+    // Normalize the API response into an array.
+    if (Array.isArray(result.data)) {
+      return result.data;
+    }
+
+    if (result.data && typeof result.data === "object") {
+      return [result.data];
+    }
+
+    return [];
   }
 
-  // Save the selected Deriv account
   function setSelectedAccount(accountId) {
     if (!accountId || typeof accountId !== "string") {
       throw new Error("Invalid Deriv account ID.");
@@ -212,7 +205,6 @@
     sessionStorage.setItem(ACCOUNT_KEY, accountId);
   }
 
-  // Read the selected account
   function getSelectedAccount() {
     try {
       return sessionStorage.getItem(ACCOUNT_KEY);
@@ -221,7 +213,6 @@
     }
   }
 
-  // Request a fresh authenticated WebSocket URL
   async function getWebSocketUrl(accountId) {
     const token = getToken();
 
@@ -271,24 +262,23 @@
     return url;
   }
 
-  // Public interface used by the other website files
   window.DerivAuth = {
-    CLIENT_ID: CLIENT_ID,
-    SITE: SITE,
-    REDIRECT_URI: REDIRECT_URI,
+    CLIENT_ID,
+    SITE,
+    REDIRECT_URI,
 
-    login: login,
-    logout: logout,
-    saveToken: saveToken,
-    getToken: getToken,
+    login,
+    logout,
+    saveToken,
+    getToken,
 
-    readPkce: readPkce,
-    clearPkce: clearPkce,
+    readPkce,
+    clearPkce,
 
-    getAccounts: getAccounts,
-    setSelectedAccount: setSelectedAccount,
-    getSelectedAccount: getSelectedAccount,
-    getWebSocketUrl: getWebSocketUrl,
+    getAccounts,
+    setSelectedAccount,
+    getSelectedAccount,
+    getWebSocketUrl,
 
     isLoggedIn: function () {
       return !!getToken();

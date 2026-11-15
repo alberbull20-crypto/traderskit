@@ -13,13 +13,83 @@
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   />
+
+  <style>
+    .account-tools {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px 20px;
+      background: #101a2b;
+      border-bottom: 1px solid #26344a;
+    }
+
+    .connection-indicator {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #ef5350;
+      margin-right: 7px;
+    }
+
+    .account-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: #dce6f5;
+      font-size: 12px;
+    }
+
+    .account-info strong {
+      color: #54e0bd;
+    }
+
+    .account-action {
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .deposit-action {
+      background: #54e0bd;
+      color: #071b17;
+    }
+
+    .withdraw-action {
+      background: #263c59;
+      color: white;
+    }
+
+    .logout-action {
+      background: #572b39;
+      color: white;
+    }
+
+    .account-action:hover {
+      opacity: .85;
+    }
+
+    @media(max-width: 600px) {
+      .account-tools {
+        align-items: flex-start;
+      }
+
+      .account-info {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body class="dash-body">
 
-  <!-- =====================================================
-       TOP HEADER
-  ====================================================== -->
+  <!-- TOP HEADER -->
   <header class="dash-top-header">
 
     <div class="dash-header-left">
@@ -36,80 +106,56 @@
 
     </div>
 
-    <!-- Navigation -->
     <nav class="dash-nav-tabs" id="nav-tabs-container">
 
-      <button
-        class="nav-tab active"
-        onclick="window.location.href='dashboard.html'"
-      >
+      <button class="nav-tab active"
+        onclick="window.location.href='dashboard.html'">
         Dashboard
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='bot-builder.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='bot-builder.html'">
         Bot Builder
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='trading-bots.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='trading-bots.html'">
         Trading Bots
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='bulk-trader.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='bulk-trader.html'">
         Bulk Trader
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='pro-ai.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='pro-ai.html'">
         Pro AI
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='dual-edge.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='dual-edge.html'">
         Dual Edge
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='analysis-tool.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='analysis-tool.html'">
         Analysis Tool
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='copy-trading.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='copy-trading.html'">
         Copy Trading
       </button>
 
-      <button
-        class="nav-tab"
-        onclick="window.location.href='charts.html'"
-      >
+      <button class="nav-tab"
+        onclick="window.location.href='charts.html'">
         Charts
       </button>
 
     </nav>
 
-    <!-- Account controls -->
     <div class="dash-header-right">
-
-      <button class="btn-withdraw" id="withdraw-btn">
-        Withdraw
-      </button>
 
       <a
         id="oauth-login-btn"
@@ -124,9 +170,7 @@
         class="account-dropdown-pill"
         style="display:none;"
       >
-        <span id="acc-currency">USD</span>
-        <span id="acc-balance" class="bal-amount">0.00</span>
-        <span class="dropdown-arrow">▼</span>
+        ACCOUNT CONNECTED
       </div>
 
     </div>
@@ -134,9 +178,64 @@
   </header>
 
 
-  <!-- =====================================================
-       ANNOUNCEMENT BAR
-  ====================================================== -->
+  <!-- ACCOUNT CONNECTION AND FINANCIAL CONTROLS -->
+  <section class="account-tools">
+
+    <div class="account-info">
+
+      <span>
+        <span
+          id="connection-indicator"
+          class="connection-indicator"
+        ></span>
+
+        <strong id="connection-status">
+          Not connected
+        </strong>
+      </span>
+
+      <span>
+        Account:
+        <strong id="account-type">NOT CONNECTED</strong>
+      </span>
+
+      <span>
+        Balance:
+        <strong id="account-balance">--</strong>
+      </span>
+
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <button
+      id="deposit-btn"
+      class="account-action deposit-action"
+      type="button"
+    >
+      + Deposit
+    </button>
+
+    <button
+      id="withdraw-btn"
+      class="account-action withdraw-action"
+      type="button"
+    >
+      Withdraw
+    </button>
+
+    <button
+      id="logout-btn"
+      class="account-action logout-action"
+      type="button"
+    >
+      Logout
+    </button>
+
+  </section>
+
+
+  <!-- ANNOUNCEMENT BAR -->
   <div class="red-announcement-ticker">
 
     <div class="marquee">
@@ -162,12 +261,10 @@
   </div>
 
 
-  <!-- =====================================================
-       MAIN WORKSPACE
-  ====================================================== -->
+  <!-- MAIN WORKSPACE -->
   <main class="workspace-container">
 
-    <!-- Search and filters -->
+    <!-- SEARCH AND FILTERS -->
     <div class="filter-toolbar">
 
       <div class="filter-dropdown-group">
@@ -217,9 +314,7 @@
     </div>
 
 
-    <!-- =================================================
-         LIVE MARKET STATISTICS
-    ================================================== -->
+    <!-- LIVE MARKET STATISTICS -->
     <section class="live-signals-section">
 
       <div class="section-title-row">
@@ -246,26 +341,21 @@
 
       </div>
 
-      <p
-        style="
-          margin-top:12px;
-          font-size:0.72rem;
-          line-height:1.6;
-          color:var(--text-muted);
-        "
-      >
-        Each card shows the biggest observed share among Even, Odd,
-        Rise and Fall in the recent market sample. These statistics
-        describe previous ticks only. They do not predict the next
-        movement or guarantee a trading outcome.
+      <p style="
+        margin-top:12px;
+        font-size:0.72rem;
+        line-height:1.6;
+        color:var(--text-muted);
+      ">
+        These statistics describe previous market ticks only.
+        They do not predict the next movement or guarantee
+        a trading outcome.
       </p>
 
     </section>
 
 
-    <!-- =================================================
-         LIVE DIGIT ANALYTICS
-    ================================================== -->
+    <!-- LIVE DIGIT ANALYTICS -->
     <section class="terminal-card-container">
 
       <div class="terminal-top-row">
@@ -274,13 +364,13 @@
 
         <div class="live-quote-box">
           QUOTE:
-          <span id="live-quote-display">---.--</span>
+          <span id="current-quote">---.--</span>
         </div>
 
       </div>
 
 
-      <!-- Decorative trading scene -->
+      <!-- DECORATIVE TRADING SCENE -->
       <div
         class="trade-scene"
         style="height:170px;max-width:520px;margin-bottom:14px;"
@@ -320,11 +410,11 @@
       </div>
 
 
-      <!-- Digit grid -->
+      <!-- DIGIT GRID -->
       <div class="digit-grid-view" id="digit-grid"></div>
 
 
-      <!-- Bot controls -->
+      <!-- BOT CONTROLS -->
       <div class="bot-runner-footer-bar">
 
         <div class="runner-controls-left">
@@ -352,21 +442,10 @@
 
           <select id="contract-select" class="select-box">
 
-            <option value="DIGITEVEN">
-              Digit Even
-            </option>
-
-            <option value="DIGITODD">
-              Digit Odd
-            </option>
-
-            <option value="DIGITOVER">
-              Digit Over (4)
-            </option>
-
-            <option value="DIGITUNDER">
-              Digit Under (5)
-            </option>
+            <option value="DIGITEVEN">Digit Even</option>
+            <option value="DIGITODD">Digit Odd</option>
+            <option value="DIGITOVER">Digit Over (4)</option>
+            <option value="DIGITUNDER">Digit Under (5)</option>
 
           </select>
 
@@ -391,7 +470,7 @@
           </button>
 
           <span class="execution-speed-tag">
-            Execution: DEMO TEST
+            EXECUTION: TEST MODE
           </span>
 
         </div>
@@ -399,10 +478,10 @@
       </div>
 
 
-      <!-- Activity log -->
+      <!-- ACTIVITY LOG -->
       <div id="trade-log" class="terminal-log-box">
-        TradersKit initialized. Please log in with Deriv to connect
-        your demo account.
+        TradersKit initialized. Connect your Deriv account to begin.
+        Automated order execution is currently disabled.
       </div>
 
     </section>
@@ -410,9 +489,7 @@
   </main>
 
 
-  <!-- =====================================================
-       FLOATING AI ASSISTANT
-  ====================================================== -->
+  <!-- FLOATING AI ASSISTANT -->
   <div class="floating-ai-btn" id="ai-assistant-btn">
 
     <div class="ai-glow-circle">
@@ -422,26 +499,13 @@
   </div>
 
 
-  <!-- =====================================================
-       JAVASCRIPT FILES
-       IMPORTANT: Keep this order.
-  ====================================================== -->
-
+  <!-- JAVASCRIPT FILES -->
   <script src="ai-assistant.js"></script>
-
-  <!-- Authentication must load before app.js -->
   <script src="deriv-auth.js"></script>
-
-  <!-- Main dashboard logic -->
   <script src="app.js"></script>
 
 
-  <!-- =====================================================
-       LIVE MARKET STATS SCRIPT
-
-       Public market data only.
-       No login or account token required.
-  ====================================================== -->
+  <!-- LIVE MARKET STATISTICS -->
   <script>
     (function () {
       "use strict";
@@ -490,14 +554,10 @@
         );
       }
 
-
-      // Calculate the largest observed share.
       function bestLean(market) {
         var n = market.prices.length;
 
-        if (n < 50) {
-          return null;
-        }
+        if (n < 50) return null;
 
         var even = 0;
         var up = 0;
@@ -510,57 +570,30 @@
           }
 
           if (i > 0) {
-
             if (market.prices[i] > market.prices[i - 1]) {
               up++;
             } else if (market.prices[i] < market.prices[i - 1]) {
               down++;
             }
-
           }
         }
 
         var evenPct = (even / n) * 100;
-
         var moves = up + down;
 
-        var upPct = moves
-          ? (up / moves) * 100
-          : 50;
+        var upPct = moves ? (up / moves) * 100 : 50;
 
         var options = [
-          {
-            name: "Even",
-            pct: evenPct,
-            tone: "fall",
-            arrow: ""
-          },
-          {
-            name: "Odd",
-            pct: 100 - evenPct,
-            tone: "odd",
-            arrow: ""
-          },
-          {
-            name: "Rise",
-            pct: upPct,
-            tone: "fall",
-            arrow: "▲ "
-          },
-          {
-            name: "Fall",
-            pct: 100 - upPct,
-            tone: "odd",
-            arrow: "▼ "
-          }
+          { name: "Even", pct: evenPct, tone: "fall", arrow: "" },
+          { name: "Odd", pct: 100 - evenPct, tone: "odd", arrow: "" },
+          { name: "Rise", pct: upPct, tone: "fall", arrow: "▲ " },
+          { name: "Fall", pct: 100 - upPct, tone: "odd", arrow: "▼ " }
         ];
 
         var best = options[0];
 
         options.forEach(function (option) {
-          if (option.pct > best.pct) {
-            best = option;
-          }
+          if (option.pct > best.pct) best = option;
         });
 
         return {
@@ -572,8 +605,6 @@
         };
       }
 
-
-      // Render the top four market statistics.
       function render() {
         if (!grid) return;
 
@@ -581,15 +612,10 @@
 
         LIST.forEach(function (market) {
           var result = bestLean(data[market.symbol]);
-
-          if (result) {
-            rows.push(result);
-          }
+          if (result) rows.push(result);
         });
 
-        if (!rows.length) {
-          return;
-        }
+        if (!rows.length) return;
 
         rows.sort(function (a, b) {
           return b.pct - a.pct;
@@ -598,54 +624,28 @@
         var top = rows.slice(0, SHOW);
 
         grid.innerHTML = top.map(function (result, index) {
-
           return (
             '<div class="signal-card">' +
-
               '<div class="signal-card-header">' +
-
-                '<span class="sig-num">#' +
-                  (index + 1) +
+                '<span class="sig-num">#' + (index + 1) + '</span>' +
+                '<span class="sig-tag ' + result.tone + '">' +
+                  result.arrow + result.name +
                 '</span>' +
-
-                '<span class="sig-tag ' +
-                  result.tone +
-                '">' +
-                  result.arrow +
-                  result.name +
-                '</span>' +
-
               '</div>' +
-
-              '<h4>' +
-                result.label +
-              '</h4>' +
-
+              '<h4>' + result.label + '</h4>' +
               '<div class="confidence-row">' +
-
-                '<span>Share of last ' +
-                  KEEP +
-                  ' ticks</span>' +
-
+                '<span>Share of last ' + KEEP + ' ticks</span>' +
                 '<span class="conf-val">' +
-                  result.pct.toFixed(1) +
-                  '%</span>' +
-
+                  result.pct.toFixed(1) + '%' +
+                '</span>' +
               '</div>' +
-
               '<div class="progress-bar-container">' +
-
-                '<div class="progress-fill ' +
-                  result.tone +
-                  '" style="width:' +
-                  result.pct.toFixed(1) +
+                '<div class="progress-fill ' + result.tone +
+                  '" style="width:' + result.pct.toFixed(1) +
                   '%;"></div>' +
-
               '</div>' +
-
             '</div>'
           );
-
         }).join("");
 
         if (badge) {
@@ -653,139 +653,82 @@
         }
       }
 
-
-      // Open the new public Options API connection.
       function connect() {
+        if (manuallyClosed) return;
 
-        if (manuallyClosed) {
-          return;
-        }
-
-        if (badge) {
-          badge.textContent = "Connecting...";
-        }
+        if (badge) badge.textContent = "Connecting...";
 
         try {
-
           socket = new WebSocket(PUBLIC_WS_URL);
-
         } catch (error) {
-
           showConnectionError(error.message);
           scheduleReconnect();
           return;
-
         }
 
-
         socket.onopen = function () {
-
-          if (badge) {
-            badge.textContent = "Connected — loading markets";
-          }
+          if (badge) badge.textContent = "Connected — loading markets";
 
           reconnectDelay = 3000;
 
-          // Request history for all selected markets.
           LIST.forEach(function (market, index) {
-
             socket.send(JSON.stringify({
-
               ticks_history: market.symbol,
               count: KEEP,
               end: "latest",
               style: "ticks",
               req_id: 100 + index
-
             }));
 
-
-            // Subscribe to live updates.
             socket.send(JSON.stringify({
-
               ticks: market.symbol,
               subscribe: 1,
               req_id: 200 + index
-
             }));
-
           });
-
         };
 
-
         socket.onmessage = function (event) {
-
           var message;
 
           try {
-
             message = JSON.parse(event.data);
-
           } catch (error) {
-
             return;
-
           }
 
           if (message.error) {
-
-            console.warn(
-              "Market statistics API error:",
-              message.error.message
-            );
-
+            console.warn("Market statistics API error:", message.error.message);
             return;
-
           }
 
-
-          // Historical market data.
           if (message.msg_type === "history") {
-
-            var symbol =
-              message.echo_req &&
+            var symbol = message.echo_req &&
               message.echo_req.ticks_history;
 
             var market = data[symbol];
 
-            if (!market || !message.history) {
-              return;
-            }
+            if (!market || !message.history) return;
 
             market.pip = message.pip_size || market.pip;
-
-            market.prices =
-              message.history.prices.map(Number);
+            market.prices = message.history.prices.map(Number);
 
             if (market.prices.length > KEEP) {
-              market.prices =
-                market.prices.slice(-KEEP);
+              market.prices = market.prices.slice(-KEEP);
             }
 
             render();
-
           }
 
-
-          // Live market updates.
           if (message.msg_type === "tick") {
-
-            if (!message.tick) {
-              return;
-            }
+            if (!message.tick) return;
 
             var tick = message.tick;
-
             var market = data[tick.symbol];
 
-            if (!market) {
-              return;
-            }
+            if (!market) return;
 
-            market.pip =
-              tick.pip_size || market.pip;
-
+            market.pip = tick.pip_size || market.pip;
             market.prices.push(Number(tick.quote));
 
             if (market.prices.length > KEEP) {
@@ -793,89 +736,56 @@
             }
 
             render();
-
           }
-
         };
 
-
         socket.onerror = function () {
-
           showConnectionError(
             "Could not connect to the market data service."
           );
-
         };
-
 
         socket.onclose = function () {
+          if (manuallyClosed) return;
 
-          if (manuallyClosed) {
-            return;
-          }
-
-          if (badge) {
-            badge.textContent = "Reconnecting...";
-          }
+          if (badge) badge.textContent = "Reconnecting...";
 
           scheduleReconnect();
-
         };
-
       }
 
-
       function showConnectionError(message) {
-
         console.warn("TradersKit market statistics:", message);
 
         if (badge) {
           badge.textContent = "Market connection unavailable";
         }
-
       }
 
-
       function scheduleReconnect() {
-
-        if (manuallyClosed) {
-          return;
-        }
+        if (manuallyClosed) return;
 
         clearTimeout(reconnectTimer);
 
         reconnectTimer = setTimeout(function () {
-
           connect();
-
         }, reconnectDelay);
 
         reconnectDelay = Math.min(
           reconnectDelay * 1.5,
           15000
         );
-
       }
 
-
-      // Start market statistics.
       connect();
 
-
-      // Clean up if the browser tab is closed.
       window.addEventListener("beforeunload", function () {
-
         manuallyClosed = true;
-
         clearTimeout(reconnectTimer);
 
-        if (
-          socket &&
-          socket.readyState === WebSocket.OPEN
-        ) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
           socket.close();
         }
-
       });
 
     })();
