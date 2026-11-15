@@ -77,8 +77,83 @@
     }
   }
 
+  // =========================================================
+  // DEPOSIT AND WITHDRAWAL ACCOUNT RESTRICTIONS
+  // =========================================================
+
+  function updateFinancialButtons() {
+    const depositButton = $("deposit-btn");
+    const withdrawButton = $("withdraw-btn");
+
+    const isReal =
+      Boolean(currentAccountType) &&
+      currentAccountType.includes("real");
+
+    [depositButton, withdrawButton].forEach(function (button) {
+      if (!button) return;
+
+      button.disabled = !isReal;
+
+      button.setAttribute(
+        "aria-disabled",
+        String(!isReal)
+      );
+
+      button.style.opacity = isReal ? "1" : "0.5";
+
+      button.style.cursor = isReal
+        ? "pointer"
+        : "not-allowed";
+    });
+
+    let notice = $("account-funding-notice");
+
+    if (!notice) {
+      notice = document.createElement("p");
+
+      notice.id = "account-funding-notice";
+
+      notice.style.fontSize = "13px";
+      notice.style.marginTop = "8px";
+      notice.style.color = "#f59e0b";
+
+      const container =
+        (depositButton && depositButton.parentElement) ||
+        (withdrawButton && withdrawButton.parentElement);
+
+      if (container) {
+        container.appendChild(notice);
+      }
+    }
+
+    if (notice) {
+      if (isReal) {
+        notice.textContent = "";
+        notice.style.display = "none";
+      } else if (
+        currentAccountType &&
+        currentAccountType.includes("demo")
+      ) {
+        notice.textContent =
+          "Demo account: deposits and withdrawals are unavailable.";
+
+        notice.style.display = "block";
+      } else {
+        notice.textContent =
+          "Connect a Real Deriv account to access deposits and withdrawals.";
+
+        notice.style.display = "block";
+      }
+    }
+  }
+
+  // =========================================================
+  // ACCOUNT DISPLAY
+  // =========================================================
+
   function updateAccountDisplay(account) {
     currentAccount = account;
+
     currentAccountType = String(
       account.account_type || account.type || ""
     ).toLowerCase();
@@ -86,12 +161,15 @@
     const loginButton = $("oauth-login-btn");
     const accountPill = $("account-pill");
 
-    if (loginButton) loginButton.style.display = "none";
+    if (loginButton) {
+      loginButton.style.display = "none";
+    }
 
     if (accountPill) {
       accountPill.style.display = "inline-flex";
+
       accountPill.textContent =
-        (currentAccountType.toUpperCase()) +
+        currentAccountType.toUpperCase() +
         " • " +
         (account.account_id || "");
     }
@@ -107,6 +185,8 @@
       "account-type",
       currentAccountType.toUpperCase()
     );
+
+    updateFinancialButtons();
   }
 
   function clearAccountDisplay() {
@@ -117,11 +197,18 @@
     const loginButton = $("oauth-login-btn");
     const accountPill = $("account-pill");
 
-    if (loginButton) loginButton.style.display = "inline-flex";
-    if (accountPill) accountPill.style.display = "none";
+    if (loginButton) {
+      loginButton.style.display = "inline-flex";
+    }
+
+    if (accountPill) {
+      accountPill.style.display = "none";
+    }
 
     setText("account-balance", "--");
     setText("account-type", "NOT CONNECTED");
+
+    updateFinancialButtons();
   }
 
   async function getSelectedAccountDetails() {
@@ -159,6 +246,10 @@
 
     return account;
   }
+
+  // =========================================================
+  // DIGIT GRID
+  // =========================================================
 
   function createDigitGrid() {
     const grid = $("digit-grid");
@@ -226,6 +317,7 @@
   function lastDigitOf(quote, precision) {
     const formatted = Number(quote).toFixed(precision);
     const digits = formatted.replace(".", "");
+
     return Number(digits.slice(-1));
   }
 
@@ -282,6 +374,10 @@
     );
   }
 
+  // =========================================================
+  // MARKET DATA SUBSCRIPTIONS
+  // =========================================================
+
   function subscribeTicks() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
@@ -319,6 +415,7 @@
       showMessage(
         message.error.message || "Deriv API returned an error."
       );
+
       return;
     }
 
@@ -336,6 +433,10 @@
       handleBalance(message);
     }
   }
+
+  // =========================================================
+  // WEBSOCKET CONNECTION
+  // =========================================================
 
   async function connectWebSocket() {
     if (isConnecting) return;
@@ -431,6 +532,7 @@
 
       socket.onerror = function (error) {
         console.error("WebSocket error:", error);
+
         setConnectionStatus("Connection error", false);
       };
 
@@ -456,6 +558,7 @@
       console.error("Connection failed:", error);
 
       showMessage(error.message);
+
       setConnectionStatus("Connection failed", false);
 
       if (!manuallyDisconnected) {
@@ -484,6 +587,10 @@
     setConnectionStatus("Disconnected", false);
   }
 
+  // =========================================================
+  // MARKET SELECTION
+  // =========================================================
+
   function changeMarket() {
     const selector = $("market-select");
 
@@ -499,6 +606,10 @@
       subscribeTicks();
     }
   }
+
+  // =========================================================
+  // BOT SAFETY CONTROLS
+  // =========================================================
 
   function validateStake() {
     const input = $("stake-input");
@@ -558,6 +669,7 @@
       showMessage(
         "Please connect a Deriv demo or real account first."
       );
+
       return;
     }
 
@@ -567,6 +679,7 @@
       showMessage(
         "Real account connected. Automated trading is not enabled yet."
       );
+
       return;
     }
 
@@ -582,12 +695,43 @@
     executeTrade();
   }
 
+  // =========================================================
+  // DEPOSIT AND WITHDRAWAL ACTIONS
+  // =========================================================
+
+  function openDerivWallet(action) {
+    if (
+      !currentAccountType ||
+      !currentAccountType.includes("real")
+    ) {
+      showMessage(
+        action +
+        " is available on Real accounts only."
+      );
+
+      updateFinancialButtons();
+
+      return;
+    }
+
+    window.open(
+      "https://home.deriv.com/dashboard/home",
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  // =========================================================
+  // EVENT LISTENERS
+  // =========================================================
+
   function setupEventListeners() {
     const loginButton = $("oauth-login-btn");
 
     if (loginButton) {
       loginButton.addEventListener("click", function (event) {
         event.preventDefault();
+
         DerivAuth.login();
       });
     }
@@ -597,6 +741,7 @@
     if (logoutButton) {
       logoutButton.addEventListener("click", function () {
         disconnectWebSocket();
+
         DerivAuth.logout();
 
         clearAccountDisplay();
@@ -611,6 +756,7 @@
 
     if (marketSelector) {
       marketSelector.addEventListener("change", changeMarket);
+
       currentSymbol = marketSelector.value;
     }
 
@@ -620,27 +766,21 @@
       runButton.addEventListener("click", toggleBot);
     }
 
+    // WITHDRAW — Official Deriv Wallet
     const withdrawButton = $("withdraw-btn");
 
     if (withdrawButton) {
       withdrawButton.addEventListener("click", function () {
-        window.open(
-          "https://app.deriv.com/cashier",
-          "_blank",
-          "noopener,noreferrer"
-        );
+        openDerivWallet("Withdrawals");
       });
     }
 
+    // DEPOSIT — Official Deriv Wallet
     const depositButton = $("deposit-btn");
 
     if (depositButton) {
       depositButton.addEventListener("click", function () {
-        window.open(
-          "https://app.deriv.com/cashier/deposit",
-          "_blank",
-          "noopener,noreferrer"
-        );
+        openDerivWallet("Deposits");
       });
     }
 
@@ -657,15 +797,26 @@
     }
   }
 
+  // =========================================================
+  // INITIALIZATION
+  // =========================================================
+
   async function initApp() {
     createDigitGrid();
 
     setupEventListeners();
 
+    updateFinancialButtons();
+
     const loginButton = $("oauth-login-btn");
 
-    if (DerivAuth.isLoggedIn() && DerivAuth.getSelectedAccount()) {
-      if (loginButton) loginButton.style.display = "none";
+    if (
+      DerivAuth.isLoggedIn() &&
+      DerivAuth.getSelectedAccount()
+    ) {
+      if (loginButton) {
+        loginButton.style.display = "none";
+      }
     }
 
     connectWebSocket();

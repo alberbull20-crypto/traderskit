@@ -2,12 +2,16 @@
 /* =========================================================
    TradersKit — Deriv OAuth 2.0 Authentication
    Canonical domain: https://traderskit.site
-   Supports demo and real Options accounts.
+   Supports Demo and Real Options accounts.
+   Includes Deriv Wallet balance retrieval.
    ========================================================= */
 
 (function () {
   "use strict";
 
+  // IMPORTANT:
+  // Verify this Client ID against your Deriv registered app.
+  // Preserved exactly as supplied in your existing file.
   const CLIENT_ID = "34XJmAXXrWNVS1Ya34OOv";
 
   const SITE = "https://traderskit.site";
@@ -16,7 +20,7 @@
   const AUTH_URL = "https://auth.deriv.com/oauth2/auth";
   const API_BASE = "https://api.derivws.com";
 
-  // Request only the permissions needed at this stage.
+  // Wallet API requires the payment scope.
   const SCOPE = "trade payment";
 
   const TOKEN_KEY = "dp_access_token";
@@ -24,6 +28,10 @@
   const VERIFIER_KEY = "dp_pkce_verifier";
   const STATE_KEY = "dp_oauth_state";
   const ACCOUNT_KEY = "dp_selected_account";
+
+  // =========================================================
+  // PKCE SECURITY
+  // =========================================================
 
   function randomString(length) {
     const chars =
@@ -50,22 +58,31 @@
       .replace(/=+$/, "");
   }
 
+  // =========================================================
+  // LOGIN
+  // =========================================================
+
   async function login() {
     if (window.location.origin !== SITE) {
       alert(
         "Please open TradersKit using https://traderskit.site before logging in."
       );
+
       return;
     }
 
     if (!window.crypto || !crypto.subtle) {
-      alert("Secure browser features are unavailable. Please use HTTPS.");
+      alert(
+        "Secure browser features are unavailable. Please use HTTPS."
+      );
+
       return;
     }
 
     try {
       const verifier = randomString(64);
       const state = randomString(32);
+
       const challenge = await challengeFor(verifier);
 
       sessionStorage.setItem(VERIFIER_KEY, verifier);
@@ -87,9 +104,16 @@
 
     } catch (error) {
       console.error("Deriv login failed:", error);
-      alert("Could not start secure login. Please try again.");
+
+      alert(
+        "Could not start secure login. Please try again."
+      );
     }
   }
+
+  // =========================================================
+  // TOKEN MANAGEMENT
+  // =========================================================
 
   function saveToken(token, expiresIn) {
     if (!token || typeof token !== "string") {
@@ -113,7 +137,10 @@
   function getToken() {
     try {
       const token = sessionStorage.getItem(TOKEN_KEY);
-      const expiry = Number(sessionStorage.getItem(EXPIRY_KEY));
+
+      const expiry = Number(
+        sessionStorage.getItem(EXPIRY_KEY)
+      );
 
       if (!token || !expiry || Date.now() >= expiry) {
         logout();
@@ -127,12 +154,17 @@
     }
   }
 
+  // =========================================================
+  // PKCE CALLBACK HELPERS
+  // =========================================================
+
   function readPkce() {
     try {
       return {
         verifier: sessionStorage.getItem(VERIFIER_KEY),
         state: sessionStorage.getItem(STATE_KEY)
       };
+
     } catch (error) {
       return {
         verifier: null,
@@ -146,72 +178,127 @@
     sessionStorage.removeItem(STATE_KEY);
   }
 
+  // =========================================================
+  // LOGOUT
+  // =========================================================
+
   function logout() {
     try {
       sessionStorage.removeItem(TOKEN_KEY);
       sessionStorage.removeItem(EXPIRY_KEY);
       sessionStorage.removeItem(ACCOUNT_KEY);
+
       clearPkce();
+
     } catch (error) {
-      console.error("Could not clear login information:", error);
+      console.error(
+        "Could not clear login information:",
+        error
+      );
     }
   }
+
+  // =========================================================
+  // SHARED API RESPONSE HANDLER
+  // =========================================================
+
+  async function readApiResponse(response, fallbackMessage) {
+    let result;
+
+    try {
+      result = await response.json();
+
+    } catch (error) {
+      throw new Error(
+        "Deriv returned an invalid response."
+      );
+    }
+
+    if (!response.ok) {
+      const message =
+        result?.errors?.[0]?.message ||
+        result?.error?.message ||
+        fallbackMessage;
+
+      throw new Error(message);
+    }
+
+    return result;
+  }
+
+  // =========================================================
+  // OPTIONS ACCOUNT RETRIEVAL
+  // =========================================================
 
   async function getAccounts() {
     const token = getToken();
 
     if (!token) {
-      throw new Error("Your login has expired. Please log in again.");
+      throw new Error(
+        "Your login has expired. Please log in again."
+      );
     }
 
     const response = await fetch(
       API_BASE + "/trading/v1/options/accounts",
       {
         method: "GET",
+
         headers: {
           Authorization: "Bearer " + token,
           Accept: "application/json"
         },
+
         cache: "no-store"
       }
     );
 
-    const result = await response.json();
+    const result = await readApiResponse(
+      response,
+      "Could not retrieve your Deriv accounts."
+    );
 
-    if (!response.ok) {
-      throw new Error(
-        result?.errors?.[0]?.message ||
-        "Could not retrieve your Deriv accounts."
-      );
-    }
-
-    // Normalize the API response into an array.
     if (Array.isArray(result.data)) {
       return result.data;
     }
 
-    if (result.data && typeof result.data === "object") {
+    if (
+      result.data &&
+      typeof result.data === "object"
+    ) {
       return [result.data];
     }
 
     return [];
   }
 
+  // =========================================================
+  // SELECTED ACCOUNT
+  // =========================================================
+
   function setSelectedAccount(accountId) {
     if (!accountId || typeof accountId !== "string") {
       throw new Error("Invalid Deriv account ID.");
     }
 
-    sessionStorage.setItem(ACCOUNT_KEY, accountId);
+    sessionStorage.setItem(
+      ACCOUNT_KEY,
+      accountId
+    );
   }
 
   function getSelectedAccount() {
     try {
       return sessionStorage.getItem(ACCOUNT_KEY);
+
     } catch (error) {
       return null;
     }
   }
+
+  // =========================================================
+  // AUTHENTICATED OPTIONS WEBSOCKET
+  // =========================================================
 
   async function getWebSocketUrl(accountId) {
     const token = getToken();
@@ -221,7 +308,9 @@
     }
 
     if (!accountId || typeof accountId !== "string") {
-      throw new Error("Please select a Deriv account first.");
+      throw new Error(
+        "Please select a Deriv account first."
+      );
     }
 
     const endpoint =
@@ -232,21 +321,19 @@
 
     const response = await fetch(endpoint, {
       method: "POST",
+
       headers: {
         Authorization: "Bearer " + token,
         Accept: "application/json"
       },
+
       cache: "no-store"
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result?.errors?.[0]?.message ||
-        "Could not authenticate the trading connection."
-      );
-    }
+    const result = await readApiResponse(
+      response,
+      "Could not authenticate the trading connection."
+    );
 
     const url = result?.data?.url;
 
@@ -256,11 +343,96 @@
         "wss://api.derivws.com/trading/v1/options/ws/"
       )
     ) {
-      throw new Error("Deriv returned an invalid WebSocket URL.");
+      throw new Error(
+        "Deriv returned an invalid WebSocket URL."
+      );
     }
 
     return url;
   }
+
+  // =========================================================
+  // DERIV WALLET API
+  // =========================================================
+
+  /*
+    Retrieves all Wallets belonging to the authenticated user.
+
+    Official endpoint:
+    GET https://api.derivws.com/wallet/v1/wallets
+
+    Requires OAuth scope:
+    payment
+
+    Optional:
+    getWallets({ conversion_currency: "USD" })
+
+    Returns the API's data object without assuming
+    undocumented wallet response fields.
+  */
+
+  async function getWallets(options) {
+    const token = getToken();
+
+    if (!token) {
+      throw new Error(
+        "Your login has expired. Please log in again."
+      );
+    }
+
+    const params = new URLSearchParams();
+
+    if (
+      options &&
+      options.conversion_currency
+    ) {
+      const currency = String(
+        options.conversion_currency
+      ).toUpperCase();
+
+      if (!/^[A-Z]{3}$/.test(currency)) {
+        throw new Error(
+          "Invalid conversion currency. Use a three-letter currency code."
+        );
+      }
+
+      params.set(
+        "conversion_currency",
+        currency
+      );
+    }
+
+    const query = params.toString();
+
+    const endpoint =
+      API_BASE +
+      "/wallet/v1/wallets" +
+      (query ? "?" + query : "");
+
+    const response = await fetch(endpoint, {
+      method: "GET",
+
+      headers: {
+        Authorization: "Bearer " + token,
+        Accept: "application/json"
+      },
+
+      cache: "no-store"
+    });
+
+    const result = await readApiResponse(
+      response,
+      "Could not retrieve your Deriv Wallet balances."
+    );
+
+    return result.data !== undefined
+      ? result.data
+      : result;
+  }
+
+  // =========================================================
+  // PUBLIC AUTHENTICATION INTERFACE
+  // =========================================================
 
   window.DerivAuth = {
     CLIENT_ID,
@@ -269,6 +441,7 @@
 
     login,
     logout,
+
     saveToken,
     getToken,
 
@@ -276,9 +449,14 @@
     clearPkce,
 
     getAccounts,
+
     setSelectedAccount,
     getSelectedAccount,
+
     getWebSocketUrl,
+
+    // Wallet API
+    getWallets,
 
     isLoggedIn: function () {
       return !!getToken();
