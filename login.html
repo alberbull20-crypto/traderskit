@@ -1,36 +1,70 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dollarprinter — Log in with Deriv</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradersKit — Login with Deriv</title>
+
+  <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
+
 <body class="landing-body">
 
-  <div class="terminal-card-container" style="max-width: 520px; margin: 90px auto; text-align: center;">
-    <div class="brand-logo-text" style="margin-bottom: 18px;">
-      <span class="logo-box-red">Dollar</span><span class="logo-text-white">printer</span>
+  <div class="terminal-card-container" style="max-width:520px;margin:90px auto;text-align:center;">
+
+    <div class="brand-logo-text" style="margin-bottom:18px;">
+      <span class="logo-box-red">Traders</span>
+      <span class="logo-text-white">Kit</span>
     </div>
-    <h2>Log in with Deriv</h2>
-    <p style="color: var(--text-muted); margin: 12px 0 22px; line-height: 1.6;">
-      You will be taken to Deriv's own login page. Dollarprinter never sees your password.
+
+    <h2>Connect your Deriv account</h2>
+
+    <p style="color:var(--text-muted);margin:12px 0 22px;line-height:1.6;">
+      You will be redirected to Deriv's official login page.
+      TradersKit never asks for or sees your Deriv password.
     </p>
-    <button class="btn-run-bot" id="go">Continue to Deriv</button>
-    <p style="margin-top: 20px; font-size: 0.72rem; line-height: 1.6; color: var(--text-muted);">
-      Risk warning: trading carries a high level of risk and you can lose all of your stake. Start with a Deriv demo account.
+
+    <button class="btn-run-bot" id="go" type="button">
+      Continue to Deriv
+    </button>
+
+    <p id="login-status" style="margin-top:14px;color:var(--text-muted);"></p>
+
+    <p style="margin-top:20px;font-size:0.72rem;line-height:1.6;color:var(--text-muted);">
+      Risk warning: Trading carries a high level of risk.
+      You can lose your entire stake. Start with a Deriv demo account.
     </p>
+
+    <p style="margin-top:18px;">
+      <a href="index.html" style="color:var(--cyan);">Back to TradersKit</a>
+    </p>
+
   </div>
 
   <script src="deriv-auth.js"></script>
-  <script>
-    document.getElementById("go").addEventListener("click", function () { DerivAuth.login(); });
 
-    // Start by itself, unless the visitor just came back from Deriv with the Back button
-    if (document.referrer.indexOf("deriv.com") === -1) {
-      setTimeout(function () { DerivAuth.login(); }, 400);
-    }
+  <script>
+    const loginButton = document.getElementById("go");
+    const status = document.getElementById("login-status");
+
+    loginButton.addEventListener("click", async function () {
+
+      loginButton.disabled = true;
+      status.textContent = "Preparing secure Deriv login...";
+
+      try {
+        await DerivAuth.login();
+      } catch (error) {
+        console.error(error);
+
+        status.textContent = "Unable to start login. Please try again.";
+        loginButton.disabled = false;
+      }
+
+    });
   </script>
+
 </body>
 </html>

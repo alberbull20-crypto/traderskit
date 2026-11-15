@@ -1,264 +1,606 @@
-// ---------- Settings you can change ----------
-const APP_ID = 1089; // Public test App ID. Replace with your own once your app is registered
-const WS_URL = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
 
-const MAX_TICKS = 50;          // how many recent ticks the digit grid uses
-const MAX_STAKE = 10;          // the bot refuses a stake above this
-const MAX_SESSION_LOSS = 10;   // the bot stops when total loss reaches this
-const MAX_TRADES = 50;         // the bot stops after this many trades
-const TOKEN_KEY = "dp_token";  // CHANGED: where the login token is kept for this browser tab
+/* ==========================================================
+   TradersKit — Deriv Options API Dashboard
+   Canonical domain: https://traderskit.site
+
+   This version:
+   - Uses the new Deriv Options API WebSocket
+   - Uses DerivAuth for OAuth and account authentication
+   - Supports demo-account connections
+   - Streams market ticks and calculates digit statistics
+   - Displays account balance
+   - Keeps the existing dashboard controls
+   - DOES NOT PLACE TRADES YET
+   ========================================================== */
+
+// ---------- Settings ----------
+const API_BASE = "https://api.derivws.com";
+const PUBLIC_WS_URL =
+  "wss://api.derivws.com/trading/v1/options/ws/public";
+
+const MAX_TICKS = 50;
+const MAX_STAKE = 10;
+const MAX_SESSION_LOSS = 10;
+const MAX_TRADES = 50;
+
+const RECONNECT_DELAY = 5000;
 
 // ---------- State ----------
-let ws;
+let ws = null;
 let digitHistory = [];
 let pipSize = 2;
-let currentSymbol = "";
+let currentSymbol = "1HZ100V";
+
 let isAuthorized = false;
-let sessionToken = null;
 let botRunning = false;
 let tradeInProgress = false;
+
 let sessionProfit = 0;
 let tradesDone = 0;
+
+let reconnectTimer = null;
+let connectionAttempt = 0;
+let manuallyDisconnected = false;
+
 const handledContracts = new Set();
 
+// ---------- Helpers ----------
+function getElement(id) {
+  return document.getElementById(id);
+}
+
+function sendMessage(message) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    logMessage("WebSocket is not connected.", "#ff3b30");
+    return false;
+  }
+
+  ws.send(JSON.stringify(message));
+  return true;
+}
+
+function formatMoney(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return "0.00";
+  }
+
+  return number.toFixed(2);
+}
+
 // ---------- Log box ----------
-function logMessage(text, color) {
-  const box = document.getElementById("trade-log");
+function logMessage(message, color) {
+  const box = getElement("trade-log");
+
   if (!box) return;
 
-  // Clear the starting placeholder text on the first message
   if (!box.dataset.started) {
     box.textContent = "";
     box.dataset.started = "1";
   }
 
   const line = document.createElement("div");
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
-  if (color) line.style.color = color;
+
+  line.textContent =
+    `[${new Date().toLocaleTimeString()}] ${message}`;
+
+  if (color) {
+    line.style.color = color;
+  }
+
   box.appendChild(line);
 
-  while (box.children.length > 100) box.removeChild(box.firstChild);
+  while (box.children.length > 100) {
+    box.removeChild(box.firstChild);
+  }
+
   box.scrollTop = box.scrollHeight;
 }
 
-// ---------- Start ----------
+// ---------- Dashboard initialization ----------
 function initApp() {
-  // Login URL points back to this page
-  const currentRedirect = window.location.href.split("?")[0];
-  const oauthUrl = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=EN&brand=deriv&redirect_uri=${encodeURIComponent(currentRedirect)}`;
+  buildDigitGrid();
+  setupEventListeners();
 
-  const loginBtn = document.getElementById("oauth-login-btn");
-  if (loginBtn) loginBtn.href = oauthUrl;
+  const marketSelect = getElement("market-select");
 
-  // Digit grid
-  const grid = document.getElementById("digit-grid");
-  if (grid) {
-    grid.innerHTML = "";
-    for (let i = 0; i <= 9; i++) {
-      grid.innerHTML += `
-        <div class="digit-box-card" id="digit-card-${i}">
-          <strong style="font-size: 1.2rem;">${i}</strong><br>
-          <span id="digit-pct-${i}" style="font-size: 0.78rem; color: var(--text-muted);">0.0%</span>
-        </div>
-      `;
-    }
+  if (marketSelect && marketSelect.value) {
+    currentSymbol = marketSelect.value;
   }
 
-  // CHANGED: if Deriv sent us back with a token, keep it for this tab (so the other pages can use it)
-  // and remove it from the address bar. Otherwise reuse the token saved earlier in this tab.
-  const urlParams = new URLSearchParams(window.location.search);
-  const oauthToken = urlParams.get("token1");
-  if (oauthToken) {
-    sessionToken = oauthToken;
-    try { sessionStorage.setItem(TOKEN_KEY, oauthToken); } catch (e) { /* ignore */ }
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } else {
-    try { sessionToken = sessionStorage.getItem(TOKEN_KEY); } catch (e) { sessionToken = null; }
+  const loginBtn = getElement("oauth-login-btn");
+
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async function (event) {
+      event.preventDefault();
+
+      if (!window.DerivAuth) {
+        logMessage(
+          "Authentication helper is missing. Check deriv-auth.js.",
+          "#ff3b30"
+        );
+        return;
+      }
+
+      try {
+        await DerivAuth.login();
+      } catch (error) {
+        logMessage(
+          "Could not start Deriv login: " + error.message,
+          "#ff3b30"
+        );
+      }
+    });
   }
 
   connectWebSocket();
-  setupEventListeners();
 }
 
-// ---------- Connection ----------
-function connectWebSocket() {
-  ws = new WebSocket(WS_URL);
+// ---------- Digit grid ----------
+function buildDigitGrid() {
+  const grid = getElement("digit-grid");
 
-  ws.onopen = () => {
-    logMessage("Connected to Deriv live WebSocket.", "#34c759");
-    subscribeTicks(document.getElementById("market-select").value);
+  if (!grid) return;
 
-    if (sessionToken) {
-      logMessage("Authorizing user session via Deriv OAuth...", "#32ade6");
-      ws.send(JSON.stringify({ authorize: sessionToken }));
-    }
-  };
+  grid.innerHTML = "";
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+  for (let i = 0; i <= 9; i++) {
+    const card = document.createElement("div");
 
-    // ----- Errors -----
-    if (data.error) {
-      logMessage(`API Error: ${data.error.message}`, "#ff3b30");
+    card.className = "digit-box-card";
+    card.id = `digit-card-${i}`;
 
-      if (data.msg_type === "buy") {
-        tradeInProgress = false;
-        if (botRunning) stopBot("Bot stopped after a trade error.");
-      }
-      if (data.msg_type === "authorize") {
-        sessionToken = null;
-        try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ } // CHANGED
-        logMessage("Login failed. Please click Login again.", "#ff3b30");
-      }
-      return;
-    }
+    card.innerHTML = `
+      <strong style="font-size:1.2rem;">${i}</strong>
+      <br>
+      <span
+        id="digit-pct-${i}"
+        style="font-size:0.78rem;color:var(--text-muted);"
+      >0.0%</span>
+    `;
 
-    // ----- First batch of recent ticks -----
-    if (data.msg_type === "history") {
-      if (data.echo_req.ticks_history !== currentSymbol) return;
-
-      pipSize = data.pip_size || pipSize;
-      const prices = data.history.prices;
-      digitHistory = prices.map(lastDigitOf);
-
-      document.getElementById("live-quote-display").textContent =
-        Number(prices[prices.length - 1]).toFixed(pipSize);
-      updateDigitAnalytics(digitHistory[digitHistory.length - 1]);
-      return;
-    }
-
-    // ----- New tick -----
-    if (data.msg_type === "tick") {
-      handleTick(data.tick);
-      return;
-    }
-
-    // ----- Login worked -----
-    if (data.msg_type === "authorize") {
-      isAuthorized = true;
-      const auth = data.authorize;
-
-      const loginBtn = document.getElementById("oauth-login-btn");
-      if (loginBtn) loginBtn.style.display = "none";
-
-      const accountPill = document.getElementById("account-pill");
-      if (accountPill) accountPill.style.display = "flex";
-
-      document.getElementById("acc-currency").textContent = auth.currency;
-      document.getElementById("acc-balance").textContent = auth.balance.toFixed(2);
-
-      logMessage(`Successfully logged in as ${auth.loginid} (${auth.is_virtual ? "Demo" : "Real"})`, "#34c759");
-      if (!auth.is_virtual) {
-        logMessage("WARNING: this is a REAL money account. Trades here use real money.", "#f59e0b");
-      }
-      ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-      return;
-    }
-
-    // ----- Balance update -----
-    if (data.msg_type === "balance") {
-      document.getElementById("acc-balance").textContent = data.balance.balance.toFixed(2);
-      return;
-    }
-
-    // ----- Trade placed -----
-    if (data.msg_type === "buy") {
-      const contractId = data.buy.contract_id;
-      logMessage(`Contract #${contractId} executed. Monitoring outcome...`, "#32ade6");
-      ws.send(JSON.stringify({ proposal_open_contract: 1, contract_id: contractId, subscribe: 1 }));
-      return;
-    }
-
-    // ----- Trade finished -----
-    if (data.msg_type === "proposal_open_contract") {
-      const contract = data.proposal_open_contract;
-
-      if (contract.is_sold && !handledContracts.has(contract.contract_id)) {
-        handledContracts.add(contract.contract_id);
-        if (data.subscription) ws.send(JSON.stringify({ forget: data.subscription.id }));
-
-        tradeInProgress = false;
-        const profit = parseFloat(contract.profit);
-        sessionProfit += profit;
-        tradesDone++;
-
-        if (profit > 0) {
-          logMessage(`WIN +$${profit.toFixed(2)} (Exit: ${contract.exit_tick_display_value})`, "#34c759");
-        } else {
-          logMessage(`LOSS -$${Math.abs(profit).toFixed(2)} (Exit: ${contract.exit_tick_display_value})`, "#ff3b30");
-        }
-        logMessage(`Session: ${tradesDone} trade(s), total P/L ${sessionProfit.toFixed(2)}`, "#94a3b8");
-
-        checkLimits();
-      }
-    }
-  };
-
-  ws.onclose = () => {
-    isAuthorized = false;
-    tradeInProgress = false;
-    if (botRunning) stopBot("Connection lost. Bot stopped for safety.");
-    logMessage("Connection lost. Reconnecting...", "#ff3b30");
-    setTimeout(connectWebSocket, 3000);
-  };
-}
-
-// ---------- Ticks and digits ----------
-function subscribeTicks(symbol) {
-  currentSymbol = symbol;
-  digitHistory = [];
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-  ws.send(JSON.stringify({ forget_all: "ticks" }));
-  ws.send(JSON.stringify({
-    ticks_history: symbol,
-    count: MAX_TICKS,
-    end: "latest",
-    style: "ticks",
-    subscribe: 1
-  }));
-}
-
-function lastDigitOf(price) {
-  return parseInt(Number(price).toFixed(pipSize).slice(-1), 10);
-}
-
-function handleTick(tick) {
-  if (tick.symbol !== currentSymbol) return; // ignore ticks from a market we left
-
-  pipSize = tick.pip_size || pipSize;
-  const quoteStr = Number(tick.quote).toFixed(pipSize);
-  const lastDigit = parseInt(quoteStr.slice(-1), 10);
-
-  document.getElementById("live-quote-display").textContent = quoteStr;
-
-  digitHistory.push(lastDigit);
-  if (digitHistory.length > MAX_TICKS) digitHistory.shift();
-
-  updateDigitAnalytics(lastDigit);
-
-  if (botRunning && !tradeInProgress && isAuthorized) {
-    executeTrade();
+    grid.appendChild(card);
   }
 }
 
+// ---------- Account information ----------
+async function getDemoAccountDetails() {
+  if (!window.DerivAuth || !DerivAuth.isLoggedIn()) {
+    return null;
+  }
+
+  const selectedAccount = DerivAuth.getSelectedAccount();
+
+  if (!selectedAccount) {
+    throw new Error(
+      "No selected account. Please log in and select a demo account."
+    );
+  }
+
+  const accounts = await DerivAuth.getAccounts();
+
+  const account = accounts.find(function (item) {
+    return String(item.account_id) === String(selectedAccount);
+  });
+
+  if (!account) {
+    throw new Error(
+      "The selected account could not be found. Please log in again."
+    );
+  }
+
+  const accountType = String(account.account_type || "").toLowerCase();
+
+  if (accountType !== "demo") {
+    throw new Error(
+      "TradersKit currently permits demo accounts only."
+    );
+  }
+
+  return account;
+}
+
+function displayAccount(account) {
+  const loginBtn = getElement("oauth-login-btn");
+  const accountPill = getElement("account-pill");
+  const currencyElement = getElement("acc-currency");
+  const balanceElement = getElement("acc-balance");
+
+  if (loginBtn) {
+    loginBtn.style.display = "none";
+  }
+
+  if (accountPill) {
+    accountPill.style.display = "flex";
+  }
+
+  if (currencyElement) {
+    currencyElement.textContent = account.currency || "USD";
+  }
+
+  if (balanceElement && account.balance !== undefined) {
+    balanceElement.textContent = formatMoney(account.balance);
+  }
+
+  logMessage(
+    "Selected demo account: " +
+    (account.account_id || "Demo account"),
+    "#34c759"
+  );
+}
+
+function updateBalance(balanceData) {
+  const balanceElement = getElement("acc-balance");
+
+  if (!balanceElement || !balanceData) return;
+
+  balanceElement.textContent = formatMoney(balanceData.balance);
+
+  const currencyElement = getElement("acc-currency");
+
+  if (currencyElement && balanceData.currency) {
+    currencyElement.textContent = balanceData.currency;
+  }
+}
+
+// ---------- WebSocket connection ----------
+async function connectWebSocket() {
+  if (manuallyDisconnected) return;
+
+  const attempt = ++connectionAttempt;
+
+  try {
+    let socketUrl = PUBLIC_WS_URL;
+    let demoAccount = null;
+
+    // If logged in, obtain an authenticated demo connection.
+    if (
+      window.DerivAuth &&
+      DerivAuth.isLoggedIn() &&
+      DerivAuth.getSelectedAccount()
+    ) {
+      logMessage(
+        "Checking selected Deriv demo account...",
+        "#32ade6"
+      );
+
+      demoAccount = await getDemoAccountDetails();
+
+      if (attempt !== connectionAttempt) return;
+
+      displayAccount(demoAccount);
+
+      socketUrl = await DerivAuth.getWebSocketUrl(
+        String(demoAccount.account_id)
+      );
+
+      if (attempt !== connectionAttempt) return;
+
+      isAuthorized = true;
+    } else {
+      isAuthorized = false;
+
+      logMessage(
+        "Connecting to public market data. Log in to connect your demo account.",
+        "#94a3b8"
+      );
+    }
+
+    logMessage(
+      "Connecting to Deriv Options WebSocket...",
+      "#32ade6"
+    );
+
+    ws = new WebSocket(socketUrl);
+
+    ws.onopen = function () {
+      if (attempt !== connectionAttempt) return;
+
+      logMessage(
+        isAuthorized
+          ? "Connected to your Deriv demo account."
+          : "Connected to public Deriv market data.",
+        "#34c759"
+      );
+
+      // Request account balance only on an authenticated connection.
+      if (isAuthorized) {
+        sendMessage({
+          balance: 1,
+          subscribe: 1,
+          req_id: 1001
+        });
+      }
+
+      subscribeTicks(currentSymbol);
+    };
+
+    ws.onmessage = function (event) {
+      if (attempt !== connectionAttempt) return;
+
+      let data;
+
+      try {
+        data = JSON.parse(event.data);
+      } catch (error) {
+        logMessage("Received an unreadable API response.", "#ff3b30");
+        return;
+      }
+
+      handleWebSocketMessage(data);
+    };
+
+    ws.onerror = function () {
+      if (attempt !== connectionAttempt) return;
+
+      logMessage(
+        "WebSocket connection error. Check your internet connection.",
+        "#ff3b30"
+      );
+    };
+
+    ws.onclose = function () {
+      if (attempt !== connectionAttempt) return;
+
+      isAuthorized = false;
+      tradeInProgress = false;
+
+      if (botRunning) {
+        stopBot("Connection lost. Bot stopped for safety.");
+      }
+
+      logMessage(
+        "Connection closed. Reconnecting shortly...",
+        "#ff3b30"
+      );
+
+      scheduleReconnect();
+    };
+
+  } catch (error) {
+    if (attempt !== connectionAttempt) return;
+
+    isAuthorized = false;
+
+    logMessage(
+      "Connection setup failed: " + error.message,
+      "#ff3b30"
+    );
+
+    scheduleReconnect();
+  }
+}
+
+function scheduleReconnect() {
+  if (manuallyDisconnected) return;
+
+  clearTimeout(reconnectTimer);
+
+  reconnectTimer = setTimeout(function () {
+    connectWebSocket();
+  }, RECONNECT_DELAY);
+}
+
+// ---------- WebSocket message handling ----------
+function handleWebSocketMessage(data) {
+  if (data.error) {
+    const message =
+      data.error.message || "Unknown Deriv API error.";
+
+    logMessage("Deriv API: " + message, "#ff3b30");
+
+    if (data.msg_type === "balance") {
+      logMessage(
+        "Could not retrieve account balance.",
+        "#ff3b30"
+      );
+    }
+
+    if (data.msg_type === "buy") {
+      tradeInProgress = false;
+      stopBot("Bot stopped after a trade error.");
+    }
+
+    return;
+  }
+
+  // Historical tick data
+  if (data.msg_type === "history") {
+    handleHistory(data);
+    return;
+  }
+
+  // Live tick
+  if (data.msg_type === "tick") {
+    if (data.tick) {
+      handleTick(data.tick);
+    }
+    return;
+  }
+
+  // Account balance
+  if (data.msg_type === "balance") {
+    updateBalance(data.balance);
+    return;
+  }
+
+  // Connection and subscription information
+  if (data.msg_type === "ping") {
+    return;
+  }
+
+  // Trading messages are intentionally not activated in this version.
+  if (
+    data.msg_type === "proposal" ||
+    data.msg_type === "buy" ||
+    data.msg_type === "proposal_open_contract"
+  ) {
+    logMessage(
+      "Trading response received. Order execution is currently disabled.",
+      "#f59e0b"
+    );
+  }
+}
+
+// ---------- Tick history ----------
+function handleHistory(data) {
+  if (!data.history || !Array.isArray(data.history.prices)) {
+    return;
+  }
+
+  if (
+    data.echo_req &&
+    data.echo_req.ticks_history &&
+    data.echo_req.ticks_history !== currentSymbol
+  ) {
+    return;
+  }
+
+  if (data.pip_size !== undefined) {
+    pipSize = Number(data.pip_size);
+  }
+
+  const prices = data.history.prices;
+
+  digitHistory = prices
+    .slice(-MAX_TICKS)
+    .map(lastDigitOf);
+
+  if (prices.length > 0) {
+    const quoteElement = getElement("live-quote-display");
+
+    if (quoteElement) {
+      quoteElement.textContent =
+        Number(prices[prices.length - 1]).toFixed(pipSize);
+    }
+  }
+
+  updateDigitAnalytics(
+    digitHistory[digitHistory.length - 1]
+  );
+
+  logMessage(
+    "Loaded " + digitHistory.length + " historical ticks.",
+    "#94a3b8"
+  );
+}
+
+// ---------- Subscribe to market ticks ----------
+function subscribeTicks(symbol) {
+  if (!symbol) return;
+
+  currentSymbol = symbol;
+  digitHistory = [];
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    return;
+  }
+
+  // Clear the previous tick subscription.
+  sendMessage({
+    forget_all: "ticks"
+  });
+
+  // Load recent history.
+  sendMessage({
+    ticks_history: symbol,
+    count: MAX_TICKS,
+    end: "latest",
+    style: "ticks"
+  });
+
+  // Subscribe to new ticks.
+  sendMessage({
+    ticks: symbol,
+    subscribe: 1
+  });
+
+  logMessage(
+    "Subscribed to market: " + symbol,
+    "#32ade6"
+  );
+}
+
+// ---------- Last digit ----------
+function lastDigitOf(price) {
+  const formatted = Number(price).toFixed(pipSize);
+
+  return parseInt(formatted.slice(-1), 10);
+}
+
+// ---------- Live tick handling ----------
+function handleTick(tick) {
+  if (!tick || tick.symbol !== currentSymbol) {
+    return;
+  }
+
+  if (tick.pip_size !== undefined) {
+    pipSize = Number(tick.pip_size);
+  }
+
+  const quote = Number(tick.quote);
+
+  if (!Number.isFinite(quote)) return;
+
+  const quoteString = quote.toFixed(pipSize);
+  const lastDigit = parseInt(quoteString.slice(-1), 10);
+
+  const quoteElement = getElement("live-quote-display");
+
+  if (quoteElement) {
+    quoteElement.textContent = quoteString;
+  }
+
+  digitHistory.push(lastDigit);
+
+  if (digitHistory.length > MAX_TICKS) {
+    digitHistory.shift();
+  }
+
+  updateDigitAnalytics(lastDigit);
+}
+
+// ---------- Digit analytics ----------
 function updateDigitAnalytics(latestDigit) {
+  if (digitHistory.length === 0) return;
+
   const counts = Array(10).fill(0);
-  digitHistory.forEach(d => counts[d]++);
-  const total = digitHistory.length || 1;
-  const maxC = Math.max(...counts);
-  const minC = Math.min(...counts);
+
+  digitHistory.forEach(function (digit) {
+    if (digit >= 0 && digit <= 9) {
+      counts[digit]++;
+    }
+  });
+
+  const total = digitHistory.length;
+  const maxCount = Math.max(...counts);
+  const minCount = Math.min(...counts);
 
   for (let i = 0; i <= 9; i++) {
-    const pct = ((counts[i] / total) * 100).toFixed(1);
-    const card = document.getElementById(`digit-card-${i}`);
-    document.getElementById(`digit-pct-${i}`).textContent = `${pct}%`;
+    const percentage =
+      ((counts[i] / total) * 100).toFixed(1);
+
+    const percentageElement = getElement(`digit-pct-${i}`);
+    const card = getElement(`digit-card-${i}`);
+
+    if (percentageElement) {
+      percentageElement.textContent = percentage + "%";
+    }
+
+    if (!card) continue;
 
     card.style.borderColor = "var(--border)";
     card.style.transform = "scale(1)";
 
-    if (counts[i] === maxC && maxC > 0) card.style.borderColor = "var(--green)";
-    if (counts[i] === minC) card.style.borderColor = "var(--red)";
+    if (counts[i] === maxCount && maxCount > 0) {
+      card.style.borderColor = "var(--green)";
+    }
+
+    if (counts[i] === minCount) {
+      card.style.borderColor = "var(--red)";
+    }
+
     if (i === latestDigit) {
       card.style.borderColor = "var(--cyan)";
       card.style.transform = "scale(1.05)";
@@ -266,10 +608,12 @@ function updateDigitAnalytics(latestDigit) {
   }
 }
 
-// ---------- Bot ----------
+// ---------- Bot controls ----------
 function setRunButton(running) {
-  const runBtn = document.getElementById("run-bot-btn");
+  const runBtn = getElement("run-bot-btn");
+
   if (!runBtn) return;
+
   if (running) {
     runBtn.textContent = "■ Stop Bot";
     runBtn.style.background = "var(--red)";
@@ -282,122 +626,138 @@ function setRunButton(running) {
 function stopBot(reason) {
   botRunning = false;
   setRunButton(false);
-  if (reason) logMessage(reason, "#f59e0b");
+
+  if (reason) {
+    logMessage(reason, "#f59e0b");
+  }
 }
 
 function checkLimits() {
   if (!botRunning) return;
+
   if (sessionProfit <= -MAX_SESSION_LOSS) {
-    stopBot(`Loss limit reached (${MAX_SESSION_LOSS}). Bot stopped.`);
+    stopBot(
+      `Loss limit reached (${MAX_SESSION_LOSS}). Bot stopped.`
+    );
   } else if (tradesDone >= MAX_TRADES) {
-    stopBot(`Trade limit reached (${MAX_TRADES}). Bot stopped.`);
+    stopBot(
+      `Trade limit reached (${MAX_TRADES}). Bot stopped.`
+    );
   }
 }
 
 function readStake() {
-  return parseFloat(document.getElementById("stake-input").value);
+  const input = getElement("stake-input");
+
+  if (!input) return NaN;
+
+  return parseFloat(input.value);
 }
 
+// Trading intentionally disabled until contract compatibility
+// and the complete proposal/buy workflow have been verified.
 function executeTrade() {
-  if (!isAuthorized || tradeInProgress) return;
-
-  const stake = readStake();
-  if (!(stake > 0) || stake > MAX_STAKE) {
-    stopBot(`Invalid stake. Enter an amount above 0 and up to ${MAX_STAKE}. Bot stopped.`);
-    return;
-  }
-
-  tradeInProgress = true;
-
-  const symbol = document.getElementById("market-select").value;
-  const contractType = document.getElementById("contract-select").value;
-
-  const parameters = {
-    amount: Number(stake.toFixed(2)),
-    basis: "stake",
-    contract_type: contractType,
-    currency: document.getElementById("acc-currency").textContent || "USD",
-    duration: 1,
-    duration_unit: "t",
-    symbol: symbol
-  };
-
-  if (contractType === "DIGITOVER") parameters.barrier = "4";
-  if (contractType === "DIGITUNDER") parameters.barrier = "5";
-
-  ws.send(JSON.stringify({ buy: 1, price: Number(stake.toFixed(2)), parameters }));
+  stopBot(
+    "Automated trading is not enabled in this dashboard version."
+  );
 }
 
-// ---------- Buttons ----------
+// ---------- Event listeners ----------
 function setupEventListeners() {
-  // Mobile hamburger menu
-  const menuToggle = document.getElementById("menu-toggle-btn");
-  const navTabs = document.getElementById("nav-tabs-container");
+  // Mobile menu
+  const menuToggle = getElement("menu-toggle-btn");
+  const navTabs = getElement("nav-tabs-container");
+
   if (menuToggle && navTabs) {
-    menuToggle.addEventListener("click", () => {
+    menuToggle.addEventListener("click", function () {
       navTabs.classList.toggle("mobile-open");
     });
   }
 
-  // Market picker
-  const marketSelect = document.getElementById("market-select");
+  // Market selector
+  const marketSelect = getElement("market-select");
+
   if (marketSelect) {
-    marketSelect.addEventListener("change", (e) => {
-      subscribeTicks(e.target.value);
+    marketSelect.addEventListener("change", function (event) {
+      subscribeTicks(event.target.value);
     });
   }
 
-  // Run / Stop
-  const runBtn = document.getElementById("run-bot-btn");
+  // Run / Stop button
+  const runBtn = getElement("run-bot-btn");
+
   if (runBtn) {
-    runBtn.addEventListener("click", () => {
+    runBtn.addEventListener("click", function () {
       if (botRunning) {
         stopBot("Bot stopped by user.");
         return;
       }
 
       if (!isAuthorized) {
-        alert("Please click 'Login' in the top right corner before running the bot!");
+        alert(
+          "Please log in and select your Deriv demo account first."
+        );
         return;
       }
 
       const stake = readStake();
+
       if (!(stake > 0) || stake > MAX_STAKE) {
-        logMessage(`Enter a stake above 0 and up to ${MAX_STAKE} before running the bot.`, "#f59e0b");
+        logMessage(
+          `Enter a stake above 0 and up to ${MAX_STAKE}.`,
+          "#f59e0b"
+        );
         return;
       }
 
-      sessionProfit = 0;
-      tradesDone = 0;
-      botRunning = true;
-      setRunButton(true);
-      logMessage(`Automated bot started. Limits: loss ${MAX_SESSION_LOSS}, ${MAX_TRADES} trades, stake up to ${MAX_STAKE}.`, "#34c759");
+      logMessage(
+        "The bot interface is ready, but order execution is disabled while the new API trading workflow is being verified.",
+        "#f59e0b"
+      );
     });
   }
 
   // Withdraw
-  const withdrawBtn = document.getElementById("withdraw-btn");
+  const withdrawBtn = getElement("withdraw-btn");
+
   if (withdrawBtn) {
-    withdrawBtn.addEventListener("click", () => {
+    withdrawBtn.addEventListener("click", function () {
       window.location.href = "https://app.deriv.com/cashier";
     });
   }
 
-  // AI button: shows real numbers from the recent ticks
-  const aiBtn = document.getElementById("ai-assistant-btn");
+  // AI statistics button
+  const aiBtn = getElement("ai-assistant-btn");
+
   if (aiBtn) {
-    aiBtn.addEventListener("click", () => {
-      const n = digitHistory.length;
-      if (n < 2) {
-        logMessage("Pro AI: waiting for ticks...", "#8b5cf6");
+    aiBtn.addEventListener("click", function () {
+      const count = digitHistory.length;
+
+      if (count < 2) {
+        logMessage(
+          "Pro AI: waiting for more market ticks...",
+          "#8b5cf6"
+        );
         return;
       }
-      const even = digitHistory.filter(d => d % 2 === 0).length;
-      const evenPct = ((even / n) * 100).toFixed(1);
-      const oddPct = (100 - evenPct).toFixed(1);
-      logMessage(`Pro AI: last ${n} ticks were ${evenPct}% even and ${oddPct}% odd. Statistics only, not a prediction.`, "#8b5cf6");
+
+      const evenCount = digitHistory.filter(function (digit) {
+        return digit % 2 === 0;
+      }).length;
+
+      const evenPercentage =
+        ((evenCount / count) * 100).toFixed(1);
+
+      const oddPercentage =
+        (100 - Number(evenPercentage)).toFixed(1);
+
+      logMessage(
+        `Pro AI: last ${count} ticks were ${evenPercentage}% even and ${oddPercentage}% odd. Statistics only, not a prediction.`,
+        "#8b5cf6"
+      );
     });
   }
 }
 
-initApp();
+// ---------- Start dashboard ----------
+document.addEventListener("DOMContentLoaded", initApp);
